@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  scoreboard.api:
+    image: scoreboard.api
+    build:
+      context: ./Scoreboard.API
+      dockerfile: Dockerfile
+
+  beggarcompute:
+    image: beggarcompute
+    build:
+      context: ./beggar
+      dockerfile: Dockerfile
