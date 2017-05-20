@@ -14,13 +14,12 @@ namespace BeggarMyNeighbour
         /// </summary>
         /// <param name="deck">Deck to shuffle</param>
         /// <returns>Shuffled Deck</returns>
-        public static List<int> Shuffle(List<int> deck)
+        public static List<int> Shuffle(Random rng, List<int> deck)
         {
-            var RNG = new Random();
             var newdeck = new List<int>();
             while (deck.Count > 0)
             {
-                var pos = RNG.Next(0, deck.Count - 1);
+                var pos = rng.Next(0, deck.Count - 1);
                 newdeck.Add(deck[pos]);
                 deck.RemoveAt(pos);
             }
