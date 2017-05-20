@@ -26,21 +26,20 @@ namespace beggar
             var max = result;
             var games = 1;
             double avg = result;
+            var RNG = new Random();
             Dictionary<int, int> groups = new Dictionary<int, int>();
 
             while (true)
             {
                 games++;
-                var shuffledeck = CardUtils.Shuffle(newdeck.ToList());
+                var shuffledeck = CardUtils.Shuffle(RNG, newdeck.ToList());
 //                var ndgame = new Game(loggerFactory.CreateLogger($"Game {games}"), shuffledeck.ToList(), players);
                 var ndgame = new Game(shuffledeck.ToList(), players);
 
                 result = ndgame.Play();
 
                 avg = avg + (result - avg) / games;
-
-                if (result > 1000)
-                {
+                
                     var currentgroup = (int)Math.Floor(result / 250.0) * 250;
                     
                     if (groups.ContainsKey(currentgroup))
@@ -51,7 +50,6 @@ namespace beggar
                     {
                         groups.Add(currentgroup, 1);
                     }
-                }
 
                 //record max lenght games
                 if (result > max)
@@ -87,4 +85,5 @@ namespace beggar
             }
         }
     }
+
 }
