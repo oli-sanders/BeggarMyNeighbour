@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 namespace Scoreboard.API
 {
@@ -36,6 +38,17 @@ namespace Scoreboard.API
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
+
+
+            //TODO: Fix known proxies /networks
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.All,
+                RequireHeaderSymmetry = false,
+                ForwardLimit = null,
+                KnownNetworks = { new IPNetwork(IPAddress.Parse("10.0.0.0"), 8) }
+                //                KnownProxies = { IPAddress.Parse("162.158.202.131"), IPAddress.Parse("10.7.0.2") },
+            });
 
             app.UseMvc();
         }
