@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "BeggarCompute": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "BeggarUser": "Oli123456789"
+      }
+    }
+  }
+}
