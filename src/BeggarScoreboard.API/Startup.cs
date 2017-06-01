@@ -40,13 +40,8 @@ namespace Scoreboard.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
-        {
-            loggerFactory.AddConsole(Configuration.GetSection("Logging"));
-            loggerFactory.AddDebug();
-
-
-            //TODO: Fix known proxies /networks
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {   //TODO: Fix known proxies /networks
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.All,

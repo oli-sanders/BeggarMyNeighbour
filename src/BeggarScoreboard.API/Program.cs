@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Scoreboard.API
 {
@@ -16,6 +17,11 @@ namespace Scoreboard.API
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
+                .ConfigureLogging(factory =>
+                {
+                    factory.AddConsole();
+                    factory.AddDebug();
+                })
                 .UseApplicationInsights()
                 .Build();
 
