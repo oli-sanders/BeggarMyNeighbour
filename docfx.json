@@ -13,7 +13,10 @@
           ]
         }
       ],
-      "dest": "api"
+      "dest": "api",
+	  "properties": {
+                "TargetFramework": "netcoreapp1.1"
+            }
     }
   ],
   "build": {
