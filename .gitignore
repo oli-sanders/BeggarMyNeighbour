@@ -270,4 +270,4 @@ __pycache__/
 _site
 
 # SQLLite Databases
-.db   
+*.db   
