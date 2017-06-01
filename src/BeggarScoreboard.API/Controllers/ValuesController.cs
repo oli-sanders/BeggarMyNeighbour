@@ -45,7 +45,7 @@ namespace Scoreboard.API.Controllers
                 //fix values
                 var dbvalue = value.ToScore();
 
-                var current = _thresholdService.UpdateThreshold(dbvalue.Lenght);
+                var current = _thresholdService.UpdateThreshold(dbvalue.Lenght, dbvalue.Players);
 
                 //add and save to db
                 _context.Scores.Add(dbvalue);
