@@ -8,24 +8,54 @@ using System.Net.Http;
 
 namespace beggar
 {
+    /// <summary>
+    /// Abstract Base Class for Beggar my neighbour algorithms.
+    /// </summary>
+    /// <remarks>
+    /// Contains threshold management and high score submission functions
+    /// </remarks>
     public abstract class BeggarAlgorithm
     {
+        /// <summary>
+        /// store logger to write out to
+        /// </summary>
         private ILogger _logger;
+
+        /// <summary>
+        /// store number of players
+        /// </summary>
         private int _players;
+
+        /// <summary>
+        /// Store random number generator
+        /// </summary>
         private Random _rng;
-        private int _threshold;
+
+        /// <summary>
+        /// Store current threshold
+        /// </summary>
+        /// <remarks>
+        /// set default to 2000 wil be replaced on first submission.
+        /// </remarks>
+        private int _threshold = 2000;
+
+        /// <summary>
+        /// store username to submit scores as
+        /// </summary>
         private string _user;
+
 
         public BeggarAlgorithm(ILogger logger, Random rng, int players, string user)
         {
             _logger = logger;
             _players = players;
             _rng = rng;
-            //TODO: update threshold
-            _threshold = 2000;
             _user = user;
         }
 
+        /// <summary>
+        /// Expose logger to derived 
+        /// </summary>
         public ILogger Logger => _logger;
 
         public Random Rng => _rng;
@@ -43,11 +73,11 @@ namespace beggar
             System.IO.File.AppendAllText(@"C:\Users\oli\Desktop\Games.txt", output + ",\r\n");
             Logger.LogInformation("found game of lenght {0} : {1}", lenght, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
             var t = SendResult(mresult, "http://localhost:54056/api/scores");
-            t.Wait();
-            _threshold = t.Result;
+            
+            _threshold = t;
         }
 
-        private static async Task<int> SendResult(GameResult result, string scoreBoardUri)
+        private int SendResult(GameResult result, string scoreBoardUri)
         {
             var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
@@ -59,10 +89,13 @@ namespace beggar
             var content = new System.Net.Http.StringContent(output,System.Text.Encoding.UTF8,"application/json");
             var SendTask = client.PostAsync(scoreBoardUri,content);
 
-            var msg = await SendTask;
+            SendTask.Wait();
+            var msg = SendTask.Result;
             Console.Write(msg);
 
-           var txt = await msg.Content.ReadAsStringAsync();
+           var txttask = msg.Content.ReadAsStringAsync();
+            txttask.Wait();
+            var txt = txttask.Result;
            var routput = int.Parse(txt);
             return routput;
         }
