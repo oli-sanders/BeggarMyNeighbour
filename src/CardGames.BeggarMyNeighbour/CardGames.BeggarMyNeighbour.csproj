@@ -11,7 +11,7 @@
     <Description>Beggar My Neighbour Card Game Library</Description>
     <PackageProjectUrl>https://github.com/oli123456789/BeggarMyNeighbour</PackageProjectUrl>
     <PackageLicenseUrl />
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
