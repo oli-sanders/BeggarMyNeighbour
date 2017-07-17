@@ -4,11 +4,30 @@ services:
   scoreboard.api:
     image: scoreboard.api
     build:
-      context: ./Scoreboard.API
+      context: ./src/BeggarScoreboard.API
       dockerfile: Dockerfile
+    links:
+      - beggareventbus
+    ports:
+     - "8087:80"
 
   beggarcompute:
     image: beggarcompute
     build:
-      context: ./beggar
+      context: ./src/beggarcompute
       dockerfile: Dockerfile
+    links:
+     - "scoreboard.api"
+
+  beggareventbus:
+    image: rabbitmq:3.6.10-management
+    ports:
+     - "8080:15672"
+
+  beggarverify:
+    image: beggarverify
+    build:
+      context: ./src/BeggarVerify
+      dockerfile: Dockerfile
+    links:
+     - beggareventbus
