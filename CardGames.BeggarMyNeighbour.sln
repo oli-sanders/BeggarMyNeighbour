@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26510.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour.Compute", "src\CardGames.BeggarMyNeighbour.Compute\CardGames.BeggarMyNeighbour.Compute.csproj", "{E69B3607-CA67-45EA-AC24-95D5B8F73B60}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour", "src\CardGames.BeggarMyNeighbour\CardGames.BeggarMyNeighbour.csproj", "{090B5FA4-D600-462E-A416-CC7E2BCD6F4B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour.Scoreboard.API", "src\CardGames.BeggarMyNeighbour.Scoreboard.API\CardGames.BeggarMyNeighbour.Scoreboard.API.csproj", "{8F775AE6-4C50-4C60-8144-0A27ED5702CD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour.Verify", "src\CardGames.BeggarMyNeighbour.Verify\CardGames.BeggarMyNeighbour.Verify.csproj", "{1A605C95-2F31-46DA-8B18-A585A63AD1ED}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour.Scoreboard.Models", "src\CardGames.BeggarMyNeighbour.Scoreboard.Models\CardGames.BeggarMyNeighbour.Scoreboard.Models.csproj", "{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E69B3607-CA67-45EA-AC24-95D5B8F73B60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E69B3607-CA67-45EA-AC24-95D5B8F73B60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E69B3607-CA67-45EA-AC24-95D5B8F73B60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E69B3607-CA67-45EA-AC24-95D5B8F73B60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{090B5FA4-D600-462E-A416-CC7E2BCD6F4B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{090B5FA4-D600-462E-A416-CC7E2BCD6F4B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{090B5FA4-D600-462E-A416-CC7E2BCD6F4B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{090B5FA4-D600-462E-A416-CC7E2BCD6F4B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8F775AE6-4C50-4C60-8144-0A27ED5702CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8F775AE6-4C50-4C60-8144-0A27ED5702CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8F775AE6-4C50-4C60-8144-0A27ED5702CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8F775AE6-4C50-4C60-8144-0A27ED5702CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A605C95-2F31-46DA-8B18-A585A63AD1ED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A605C95-2F31-46DA-8B18-A585A63AD1ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A605C95-2F31-46DA-8B18-A585A63AD1ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A605C95-2F31-46DA-8B18-A585A63AD1ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal
