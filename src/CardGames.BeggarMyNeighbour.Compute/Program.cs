@@ -36,7 +36,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
         {
             var algorithm = Environment.GetEnvironmentVariable("Algorithm") ?? "Best";
             var user = Environment.GetEnvironmentVariable("BeggarUser");
-            var url = Environment.GetEnvironmentVariable("ScoreboardUrl") ?? "http://scoreboard.api/api/scores";
+            var url = Environment.GetEnvironmentVariable("ScoreboardUrl") ?? "http://beggar-api.o-os.uk";
 
             ILoggerFactory loggerFactory = new LoggerFactory();
 
