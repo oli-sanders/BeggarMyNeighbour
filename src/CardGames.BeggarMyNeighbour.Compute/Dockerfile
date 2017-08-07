@@ -11,5 +11,5 @@ RUN dotnet publish -c Release -o out -r debian.8-x64
 # build runtime image
 FROM microsoft/dotnet:2.0.0-preview2-runtime-deps
 WORKDIR /app
-COPY --from=build-env /app/out ./
+COPY --from=build-env /BeggarCompute/out ./
 ENTRYPOINT ["./BeggarCompute"]

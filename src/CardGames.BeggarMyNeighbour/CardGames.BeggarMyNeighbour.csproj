@@ -10,8 +10,9 @@
     <Product>CardGames.BeggarMyNeighbour</Product>
     <Description>Beggar My Neighbour Card Game Library</Description>
     <PackageProjectUrl>https://github.com/oli123456789/BeggarMyNeighbour</PackageProjectUrl>
-    <PackageLicenseUrl />
-    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/oli123456789/BeggarMyNeighbour/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <RepositoryUrl>https://github.com/oli123456789/BeggarMyNeighbour</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
