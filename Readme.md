@@ -1,15 +1,15 @@
 I have always wanted to know if the card game "Beggar my Neighbour" can ever get into an infinite loop.
 I have also been wanting to experiment with ASP.NET core and containerised microservices, so I wrote a distributed system to find the longest games of "Beggar my Neighbour".
 
-###Quick Links
+### Quick Links
 - [Live Web]
 
-###Technologies Used
+### Technologies Used
 - [ASP.Net Core](https://www.asp.net/)
 - [Docker](https://www.docker.com/)
 - [RabbitMQ](http://www.rabbitmq.com/)
 
-##Basic algorithm for beggar my neighbour
+## Basic algorithm for beggar my neighbour
 
 1. Deal all the cards in the deck face down. No players look at their cards or shuffles their hand.
 2. Each player plays the top card from their hand and places it in a pile face up until a picture card is played.
@@ -23,21 +23,21 @@ I have also been wanting to experiment with ASP.NET core and containerised micro
 6. As soon as a player plays their last card they are out and the next player continues from where the previous player was (e.g. if the previous player still had 2 cards left to play then the new player must pay those 2 cards.) 
 7. The last player in the game wins.
 
-##Services
+## Services
 
-###Beggar.Compute
+### Beggar.Compute
 Plays virtual games of "Beggar my Neighbour" and submits games to the scoreboard API service.
 Can be run remotely and submits scores without authentication.
 
-###Beggar.Scoreboard.API
+### Beggar.Scoreboard.API
 Back end for the scoreboard. Stores the current high scores.
 Receives new scores from beggar.compute instances.
 Retrieves scores for the web front end.
 
-###Beggar.Verify
+### Beggar.Verify
 Runs alongside the scoreboard API Service to verify received games from anonymous clients
 
 Communicates with the scoreboard using [RabbitMQ](http://www.rabbitmq.com/)
 
-###Beggar.Scoreboard.Web
+### Beggar.Scoreboard.Web
 Web front end for the scoreboard presents and filters scores submitted to the scoreboard API
