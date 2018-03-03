@@ -1,9 +1,6 @@
 I have always wanted to know if the card game "Beggar my Neighbour" can ever get into an infinite loop.
 I have also been wanting to experiment with ASP.NET core and containerised microservices, so I wrote a distributed system to find the longest games of "Beggar my Neighbour".
 
-### Quick Links
-- [Live Web]
-
 ### Technologies Used
 - [ASP.Net Core](https://www.asp.net/)
 - [Docker](https://www.docker.com/)
