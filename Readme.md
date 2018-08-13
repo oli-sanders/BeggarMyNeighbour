@@ -1,3 +1,5 @@
+[![BCH compliance](https://bettercodehub.com/edge/badge/oli-sanders/BeggarMyNeighbour?branch=master)](https://bettercodehub.com/)
+
 I have always wanted to know if the card game "Beggar my Neighbour" can ever get into an infinite loop.
 I have also been wanting to experiment with ASP.NET core and containerised microservices, so I wrote a distributed system to find the longest games of "Beggar my Neighbour".
 
