@@ -27,11 +27,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
 {
     public class BindBeggarAlgorithm : BeggarAlgorithm
     {
-
-       public BindBeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl) : base(logger, rng, players, user, scoreboardUrl)
-        {
-
-        }
+       public BindBeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl) : base(logger, rng, players, user, scoreboardUrl){}
 
        public void Run()
         {
@@ -49,10 +45,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 {
                     SubmitGame(shuffleddeck, result);
                 }
-
             }
         }
-
     }
-
 }
