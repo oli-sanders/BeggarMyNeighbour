@@ -115,7 +115,6 @@ namespace CardGames.BeggarMyNeighbour.Compute
             }
 
             return pollyresult.Result;
-
         }
 
         private int SendResult(string url, string JSONGame)
@@ -125,8 +124,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
             client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
             client.DefaultRequestHeaders.Add("User-Agent", "Beggar Reporter");
-
-
+            
             var content = new System.Net.Http.StringContent(JSONGame, System.Text.Encoding.UTF8, "application/json");
             var SendTask = client.PostAsync(url, content);
 
@@ -139,8 +137,6 @@ namespace CardGames.BeggarMyNeighbour.Compute
             var txt = txttask.Result;
             var routput = int.Parse(txt);
             return routput;
-
-
         }
     }
 }
