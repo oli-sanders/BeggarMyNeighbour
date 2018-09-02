@@ -29,11 +29,7 @@ using System.Text;
 
 namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 {
-    public interface IVerifyService
-    {
-
-    }
-
+    public interface IVerifyService{}
 
     public class VerifyService:IVerifyService
     {
@@ -45,8 +41,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 
         public VerifyService(IConnectionFactory factory, ScoreBoardContext context)
         {
-            _factory = factory;
-            
+            _factory = factory;            
             _context = context;
             _connection = _factory.CreateConnection();
             _connection.ConnectionShutdown += _connection_ConnectionShutdown;
@@ -58,22 +53,19 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
             _consumer.Received += _consumer_Received;
             
             _channel.BasicConsume(queue: "verify_response_queue", noAck: true, consumer: _consumer);
-
         }
 
         private void _connection_ConnectionShutdown(object sender, ShutdownEventArgs e)
         {
-            //  throw new NotImplementedException();
             Console.WriteLine(e.ReplyText);
-
         }
 
         private void _consumer_Received(object sender, BasicDeliverEventArgs ea)
         {
             var body = ea.Body;
             var message = Encoding.UTF8.GetString(body);
+            
             // Display message
-
             Console.WriteLine(" [x] Received {0}", message);
 
             var response = Newtonsoft.Json.JsonConvert.DeserializeObject<VerifyResponse>(message);
