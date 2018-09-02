@@ -29,12 +29,10 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
 {
     public class ScoreBoardContext : DbContext
     {
-
         public ScoreBoardContext(DbContextOptions<ScoreBoardContext> options)
             : base(options)
         { }
         
-        public DbSet<Score> Scores { get; set; }
-        
+        public DbSet<Score> Scores { get; set; }   
     }
 }
