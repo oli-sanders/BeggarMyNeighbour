@@ -23,7 +23,6 @@ using System.Collections.Generic;
 
 namespace CardGames.BeggarMyNeighbour
 {
-
     public class Game
     {
         private List<int> _deck;
@@ -34,9 +33,6 @@ namespace CardGames.BeggarMyNeighbour
         private readonly ILogger _logger;
         private Queue<int> _stack;
         private int _cardsPlayed;
-
-        // private int PreviousPlayer;
-
 
         public Game(List<int> deck, int players) : this(null, deck, players)
         {
@@ -81,7 +77,6 @@ namespace CardGames.BeggarMyNeighbour
             _logger?.LogDebug($"Moving to player {_players[CurrentPlayer].ID} Pos : {CurrentPlayer}");
         }
 
-
         public int Play()
         {
             var paycount = 0;
@@ -90,9 +85,8 @@ namespace CardGames.BeggarMyNeighbour
 
             while (_players.Count > 1)
             {
-                int currentcard = PlayCard();
-                
-                  
+                int currentcard = PlayCard();                
+
                 if (paycount > 0)
                 {
                     if (currentcard > 0)
@@ -113,10 +107,9 @@ namespace CardGames.BeggarMyNeighbour
                     else
                     { 
                         //only reduce paycount if card is not a picture card
-                    paycount--;
+                        paycount--;
                     }
 
-                    
                     if (paycount == 0)
                     {
                         //player has lost the penalty give stack to previous
@@ -152,8 +145,6 @@ namespace CardGames.BeggarMyNeighbour
                             _logger?.LogInformation("Test");
                             NextPlayer();
                         }
-
-
                     }
                 }
 
@@ -180,6 +171,5 @@ namespace CardGames.BeggarMyNeighbour
             _logger?.LogInformation($"player {_players[CurrentPlayer].ID} Pos : {CurrentPlayer} Plays {currentcard}");
             return currentcard;
         }
-
     }
 }
