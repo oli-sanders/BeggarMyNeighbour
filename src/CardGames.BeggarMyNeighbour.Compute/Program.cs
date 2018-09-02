@@ -52,9 +52,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
                     var compute = new BindBeggarAlgorithm(loggerFactory.CreateLogger("Compute"),new Random() ,players, user, url);
                     compute.Run();
                     break;
-
             }
         }
     }
-
 }
