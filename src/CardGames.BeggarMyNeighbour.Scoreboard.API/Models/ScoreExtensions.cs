@@ -26,7 +26,6 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
 {
     public static class ScoreExtensions
     {
-    
        public static VerifyRequest ToVerifyRequest (this Score score)
         {
             return new VerifyRequest
