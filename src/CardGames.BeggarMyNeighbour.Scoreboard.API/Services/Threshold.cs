@@ -28,7 +28,6 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 {
     public class ThresholdData
     {
-
         public int Players { get; private set; }
 
         private int _currentthreshold;
@@ -43,7 +42,6 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
             _currentList = currentlist;
             _currentthreshold = _currentList.LastOrDefault();
         }
-
 
         public int UpdateThreshold(int length)
         {
@@ -102,5 +100,4 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
             }
          }
     }
-
 }
