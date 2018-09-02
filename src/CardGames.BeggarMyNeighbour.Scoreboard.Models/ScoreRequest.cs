@@ -24,7 +24,6 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
 {
     public class ScoreRequest
     {
-        
         public string User { get; set; }
         public int Lenght { get; set; }
         public List<int> Deck { get; set; }
