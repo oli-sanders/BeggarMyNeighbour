@@ -44,7 +44,6 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
             _connectionFactory = connectionFactory;
         }
 
-
         // GET api/values
         [HttpGet]
         public IActionResult Get()
