@@ -31,7 +31,6 @@ namespace CardGames.BeggarMyNeighbour.Verify
     {
         static void Main(string[] args)
         {
-
             var factory = new ConnectionFactory() { HostName = "beggareventbus" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -72,7 +71,6 @@ namespace CardGames.BeggarMyNeighbour.Verify
                     channel.BasicPublish(exchange: "", routingKey: "verify_response_queue", basicProperties: properties, body: replybody);
                     Console.WriteLine(" [x] Sent {0}", replymessage);
 
-
                     Console.WriteLine($" [x] Done verifing {response.id}. The game was verified : {response.success}");
 
                     channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
@@ -84,7 +82,6 @@ namespace CardGames.BeggarMyNeighbour.Verify
                 Console.WriteLine(" Press [enter] to exit.");
                 Console.ReadLine();
             }
-
         }
     }
 }
