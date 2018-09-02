@@ -64,6 +64,5 @@ namespace CardGames.BeggarMyNeighbour
                 _hand.Enqueue(stack.Dequeue());
             }
         }
-
     }
 }
