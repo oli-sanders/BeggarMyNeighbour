@@ -58,12 +58,19 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
             var players = 4;
 
+            var rng = new Random();
             switch (algorithm)
             {
+                case "HillClimb":
+                    new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    break;
+                case "SimulatedAnnealing":
+                    new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    break;
+                case "BruteForce":
                 case "Best":
                 default:
-                    var compute = new BindBeggarAlgorithm(logger, new Random(), players, user, url, version, instanceId);
-                    compute.Run();
+                    new BindBeggarAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
                     break;
             }
         }
