@@ -34,20 +34,16 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
        public void Run()
         {
-            Logger.LogInformation("I'm Running");
+            Logger.LogInformation("Brute-force (structural) starting");
 
             while (true)
             {
-                var shuffleddeck = CardUtils.Shuffle(Rng, CardUtils.Deck);
-                var ndgame = new Game(shuffleddeck.ToList(), Players);
+                var genome = StructuredDeckUtils.RandomGenome(Rng);
+                var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
+                var result = new Game(deck, Players).Play();
 
-                var result = ndgame.Play();
-
-                //record long games
                 if (result > Threshold)
-                {
-                    SubmitGame(shuffleddeck, result);
-                }
+                    SubmitGame(deck, result);
             }
         }
     }

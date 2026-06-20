@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 
@@ -19,52 +18,42 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public void Run()
         {
-            Logger.LogInformation("Simulated annealing starting. T0={T}", InitialTemperature);
+            Logger.LogInformation("Simulated annealing (structural) starting. T0={T}", InitialTemperature);
 
-            var deck = CardUtils.Shuffle(Rng, CardUtils.Deck).ToList();
-            int currentScore = new Game(deck, Players).Play();
+            var genome = StructuredDeckUtils.RandomGenome(Rng);
+            int currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players);
             double T = InitialTemperature;
 
             while (true)
             {
-                var candidate = Mutate(deck);
-                int candidateScore = new Game(candidate, Players).Play();
+                var candidate = StructuredDeckUtils.Mutate(Rng, genome);
+                int candidateScore = StructuredDeckUtils.EvaluateBest(Rng, candidate, Players);
                 int delta = candidateScore - currentScore;
 
                 if (delta >= 0 || Rng.NextDouble() < Math.Exp(delta / T))
                 {
-                    deck = candidate;
+                    genome = candidate;
                     currentScore = candidateScore;
 
                     if (delta > 0 && currentScore > Threshold)
                     {
-                        SubmitGame(deck, currentScore);
-                        // reheat so we keep exploring from this good region
-                        T = InitialTemperature;
+                        var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
+                        SubmitGame(deck, new Game(deck, Players).Play());
+                        T = InitialTemperature; // reheat to keep exploring
                         continue;
                     }
                 }
 
                 T = Math.Max(MinTemperature, T * CoolingFactor);
 
-                // When fully cooled, reseed from a fresh random deck
                 if (T <= MinTemperature)
                 {
-                    deck = CardUtils.Shuffle(Rng, CardUtils.Deck).ToList();
-                    currentScore = new Game(deck, Players).Play();
+                    genome = StructuredDeckUtils.RandomGenome(Rng);
+                    currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players);
                     T = InitialTemperature;
                     Logger.LogInformation("Annealing cycle complete, reseeding");
                 }
             }
-        }
-
-        private List<int> Mutate(List<int> deck)
-        {
-            var next = new List<int>(deck);
-            int i = Rng.Next(next.Count);
-            int j = Rng.Next(next.Count);
-            (next[i], next[j]) = (next[j], next[i]);
-            return next;
         }
     }
 }

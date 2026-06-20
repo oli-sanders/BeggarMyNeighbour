@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 
@@ -15,34 +14,28 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public void Run()
         {
-            Logger.LogInformation("Hill-climb starting");
+            Logger.LogInformation("Hill-climb (structural) starting");
 
-            var deck = CardUtils.Shuffle(Rng, CardUtils.Deck).ToList();
-            int currentScore = new Game(deck, Players).Play();
+            var genome = StructuredDeckUtils.RandomGenome(Rng);
+            int currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players);
 
             while (true)
             {
-                var candidate = Mutate(deck);
-                int candidateScore = new Game(candidate, Players).Play();
+                var candidate = StructuredDeckUtils.Mutate(Rng, genome);
+                int candidateScore = StructuredDeckUtils.EvaluateBest(Rng, candidate, Players);
 
                 if (candidateScore >= currentScore)
                 {
-                    deck = candidate;
+                    genome = candidate;
                     currentScore = candidateScore;
                 }
 
                 if (currentScore > Threshold)
-                    SubmitGame(deck, currentScore);
+                {
+                    var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
+                    SubmitGame(deck, new Game(deck, Players).Play());
+                }
             }
-        }
-
-        private List<int> Mutate(List<int> deck)
-        {
-            var next = new List<int>(deck);
-            int i = Rng.Next(next.Count);
-            int j = Rng.Next(next.Count);
-            (next[i], next[j]) = (next[j], next[i]);
-            return next;
         }
     }
 }

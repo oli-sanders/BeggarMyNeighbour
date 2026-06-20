@@ -67,6 +67,9 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 case "SimulatedAnnealing":
                     new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
                     break;
+                case "Genetic":
+                    new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    break;
                 case "BruteForce":
                 case "Best":
                 default:
