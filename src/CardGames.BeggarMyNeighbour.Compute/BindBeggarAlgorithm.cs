@@ -27,7 +27,10 @@ namespace CardGames.BeggarMyNeighbour.Compute
 {
     public class BindBeggarAlgorithm : BeggarAlgorithm
     {
-       public BindBeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl) : base(logger, rng, players, user, scoreboardUrl){}
+       public BindBeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId)
+           : base(logger, rng, players, user, scoreboardUrl, version, instanceId) { }
+
+       public override string Strategy => "brute-force";
 
        public void Run()
         {

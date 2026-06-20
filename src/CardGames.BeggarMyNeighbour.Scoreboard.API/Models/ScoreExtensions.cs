@@ -45,7 +45,10 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
                 Submitted = DateTime.UtcNow,
                 Deck = Newtonsoft.Json.JsonConvert.SerializeObject(request.Deck),
                 Lenght = request.Lenght,
-                Players = request.Players
+                Players = request.Players,
+                Version = request.Version,
+                Strategy = String.IsNullOrEmpty(request.Strategy) ? "unknown" : request.Strategy,
+                InstanceId = request.InstanceId
             };
             return score;
         }
@@ -58,7 +61,10 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
                 Lenght = value.Lenght,
                 Deck = Newtonsoft.Json.JsonConvert.DeserializeObject<List<int>>(value.Deck),
                 IsVerified = (value.Verified != null),
-                Players = value.Players                
+                Players = value.Players,
+                Version = value.Version,
+                Strategy = value.Strategy,
+                InstanceId = value.InstanceId
             };
             return scoreResponse;
         }

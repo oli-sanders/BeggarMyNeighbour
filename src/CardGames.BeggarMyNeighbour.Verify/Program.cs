@@ -31,7 +31,8 @@ namespace CardGames.BeggarMyNeighbour.Verify
     {
         static void Main(string[] args)
         {
-            var factory = new ConnectionFactory() { HostName = "beggareventbus" };
+            var hostName = Environment.GetEnvironmentVariable("RabbitMqHostName") ?? "beggareventbus";
+            var factory = new ConnectionFactory() { HostName = hostName };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
@@ -45,7 +46,7 @@ namespace CardGames.BeggarMyNeighbour.Verify
                 var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += (model, ea) =>
                 {
-                    var body = ea.Body;
+                    var body = ea.Body.ToArray();
                     var message = Encoding.UTF8.GetString(body);
                     Console.WriteLine(" [x] Received {0}", message);
 
@@ -76,7 +77,7 @@ namespace CardGames.BeggarMyNeighbour.Verify
                     channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
                 };
                 channel.BasicConsume(queue: "verify_queue",
-                                     noAck: false,
+                                     autoAck: false,
                                      consumer: consumer);
 
                 Console.WriteLine(" Press [enter] to exit.");

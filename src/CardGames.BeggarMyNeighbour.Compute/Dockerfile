@@ -1,15 +1,10 @@
-FROM microsoft/dotnet:2.0.0-preview2-sdk AS build-env
-WORKDIR /BeggarCompute
-
-# copy everything else and build
+# Build context is the ./src directory so that project references resolve.
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 COPY . .
+RUN dotnet publish CardGames.BeggarMyNeighbour.Compute/CardGames.BeggarMyNeighbour.Compute.csproj -c Release -o /app/publish
 
-RUN dotnet restore
-
-RUN dotnet publish -c Release -o out -r debian.8-x64
-
-# build runtime image
-FROM microsoft/dotnet:2.0.0-preview2-runtime-deps
+FROM mcr.microsoft.com/dotnet/runtime:8.0
 WORKDIR /app
-COPY --from=build-env /BeggarCompute/out ./
-ENTRYPOINT ["./BeggarCompute"]
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "BeggarCompute.dll"]

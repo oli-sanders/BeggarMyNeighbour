@@ -1,24 +1,57 @@
-version: '3'
-
 services:
-  scoreboard.api:
-    image: scoreboard.api
-    build:
-      context: ./src/CardGames.BeggarMyNeighbour.Scoreboard.API
-      dockerfile: Dockerfile
-    links:
-      - beggareventbus
-    ports:
-     - "8087:80"
   beggareventbus:
-    image: rabbitmq:3.6.10-management
+    image: rabbitmq:3-management
     ports:
-     - "8080:15672"
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # management UI
+
+  scoreboard.api:
+    image: beggar-scoreboard-api
+    build:
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Scoreboard.API/Dockerfile
+    depends_on:
+      - beggareventbus
+    environment:
+      - ConnectionStrings__ScoreBoardDatabase=Data Source=/data/scoreboard.db
+      - RabbitMq__HostName=beggareventbus
+    volumes:
+      - beggar-data:/data
+    ports:
+      - "8087:8080"
+
+  scoreboard.web:
+    image: beggar-scoreboard-web
+    build:
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Scoreboard.Web/Dockerfile
+    depends_on:
+      - scoreboard.api
+    environment:
+      - ScoreboardApi__BaseUrl=http://scoreboard.api:8080
+    ports:
+      - "8088:8080"
 
   beggarverify:
-    image: beggarverify
+    image: beggar-verify
     build:
-      context: ./src/CardGames.BeggarMyNeighbour.Verify
-      dockerfile: Dockerfile
-    links:
-     - beggareventbus
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Verify/Dockerfile
+    depends_on:
+      - beggareventbus
+    environment:
+      - RabbitMqHostName=beggareventbus
+
+  beggarcompute:
+    image: beggar-compute
+    build:
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Compute/Dockerfile
+    depends_on:
+      - scoreboard.api
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+
+volumes:
+  beggar-data:

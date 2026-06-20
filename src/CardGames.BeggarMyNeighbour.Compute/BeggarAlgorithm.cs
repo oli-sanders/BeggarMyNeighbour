@@ -70,17 +70,34 @@ namespace CardGames.BeggarMyNeighbour.Compute
         /// </summary>
         private string _scoreboardurl;
 
-        public BeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl)
+        /// <summary>
+        /// Version of this compute client (e.g. "1.4.6").
+        /// </summary>
+        private string _version;
+
+        /// <summary>
+        /// Identifier unique to this running compute instance.
+        /// </summary>
+        private string _instanceId;
+
+        public BeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId)
         {
             _logger = logger;
             _players = players;
             _rng = rng;
             _user = user;
             _scoreboardurl = scoreboardUrl;
+            _version = version;
+            _instanceId = instanceId;
         }
 
         /// <summary>
-        /// Expose logger to derived 
+        /// Name of the strategy this algorithm uses (e.g. "brute-force").
+        /// </summary>
+        public abstract string Strategy { get; }
+
+        /// <summary>
+        /// Expose logger to derived
         /// </summary>
         public ILogger Logger => _logger;
 
@@ -92,10 +109,22 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public string User => _user;
 
+        public string Version => _version;
+
+        public string InstanceId => _instanceId;
+
         public void SubmitGame(List<int> deck, int lenght)
         {
-            var mresult = new GameResult() { User = User, Lenght = lenght, Deck = deck, Players = Players };
-            var output = Newtonsoft.Json.JsonConvert.SerializeObject(mresult);
+            var mresult = new GameResult()
+            {
+                User = User,
+                Lenght = lenght,
+                Deck = deck,
+                Players = Players,
+                Version = Version,
+                Strategy = Strategy,
+                InstanceId = InstanceId
+            };
             Logger.LogInformation("found game of lenght {0} : {1}", lenght, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
             var t = HttpSendResult(mresult, _scoreboardurl);
 

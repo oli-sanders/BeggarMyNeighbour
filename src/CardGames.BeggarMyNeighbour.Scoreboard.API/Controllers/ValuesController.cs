@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Text;
 using CardGames.BeggarMyNeighbour.Scoreboard.Models;
@@ -36,20 +37,22 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
         private ScoreBoardContext _context;
         private ThresholdService _thresholdService;
         private IConnectionFactory _connectionFactory;
+        private readonly ILogger<ScoresController> _logger;
 
-        public ScoresController(ScoreBoardContext context, ThresholdService threshold, IConnectionFactory connectionFactory)
+        public ScoresController(ScoreBoardContext context, ThresholdService threshold, IConnectionFactory connectionFactory, ILogger<ScoresController> logger)
         {
             _context = context;
             _thresholdService = threshold;
             _connectionFactory = connectionFactory;
+            _logger = logger;
         }
 
         // GET api/values
         [HttpGet]
         public IActionResult Get()
         {
-            //get top 100 scores by lenght
-            var scores = _context.Scores.OrderByDescending(s => s.Lenght).Take(100).Select(s => s.ToScoreResponse()).ToList();
+            //get top 1000 scores by lenght (number of moves)
+            var scores = _context.Scores.OrderByDescending(s => s.Lenght).Take(1000).Select(s => s.ToScoreResponse()).ToList();
             return Ok(scores);
         }
 
@@ -96,9 +99,10 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
 
         private void SendGameToVerify(Score dbvalue)
         {
-            using (var connection = _connectionFactory.CreateConnection())
-            using (var channel = connection.CreateModel())
+            try
             {
+                using var connection = _connectionFactory.CreateConnection();
+                using var channel = connection.CreateModel();
                 channel.QueueDeclare(queue: "verify_queue", durable: true, exclusive: false, autoDelete: false, arguments: null);
 
                 var message = Newtonsoft.Json.JsonConvert.SerializeObject(dbvalue.ToVerifyRequest());
@@ -108,7 +112,13 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 properties.Persistent = true;
 
                 channel.BasicPublish(exchange: "", routingKey: "verify_queue", basicProperties: properties, body: body);
-                Console.WriteLine(" [x] Sent {0}", message);
+                _logger.LogInformation("Queued game {Id} for verification", dbvalue.id);
+            }
+            catch (Exception ex)
+            {
+                // A submitted score is still recorded even if the verify bus is
+                // unavailable; it simply stays unverified until re-queued.
+                _logger.LogWarning(ex, "Could not queue game {Id} for verification", dbvalue.id);
             }
         }
 

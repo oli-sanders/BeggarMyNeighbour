@@ -25,8 +25,28 @@ namespace CardGames.BeggarMyNeighbour
     public class GameResult
     {
         public string User { get; set; }
+
+        /// <summary>
+        /// The score for the game: the number of moves (cards played) before it ended.
+        /// </summary>
         public int Lenght { get; set; }
+
         public List<int> Deck { get; set; }
         public int Players { get; set; }
+
+        /// <summary>
+        /// Version of the compute client that found this game (e.g. "1.4.6").
+        /// </summary>
+        public string Version { get; set; }
+
+        /// <summary>
+        /// Name of the strategy used to find this game (e.g. "brute-force").
+        /// </summary>
+        public string Strategy { get; set; }
+
+        /// <summary>
+        /// Identifier of the compute instance that found this game.
+        /// </summary>
+        public string InstanceId { get; set; }
     }
 }

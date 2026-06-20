@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017 Oliver Sanders
+/* Copyright (c) 2017 Oliver Sanders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,6 +19,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 using System;
+using System.Reflection;
 using Microsoft.Extensions.Logging;
 
 namespace CardGames.BeggarMyNeighbour.Compute
@@ -38,18 +39,30 @@ namespace CardGames.BeggarMyNeighbour.Compute
             var user = Environment.GetEnvironmentVariable("BeggarUser");
             var url = Environment.GetEnvironmentVariable("ScoreboardUrl") ?? "http://beggar-api.o-os.uk";
 
-            ILoggerFactory loggerFactory = new LoggerFactory();
+            // Version reported to the scoreboard (e.g. "1.4.6"). Falls back to the assembly version.
+            var version = Environment.GetEnvironmentVariable("BeggarVersion")
+                ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+                ?? "0.0.0";
 
-            loggerFactory
-                .AddConsole()
-                .AddDebug();
+            // A stable id for this running compute instance, reported with every game.
+            var instanceId = Environment.GetEnvironmentVariable("InstanceId") ?? Guid.NewGuid().ToString();
+
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+                builder.AddDebug();
+            });
+
+            var logger = loggerFactory.CreateLogger("Compute");
+            logger.LogInformation("Compute starting. Version {Version}, Instance {InstanceId}, User {User}", version, instanceId, user);
 
             var players = 4;
-            
-            switch(algorithm)
+
+            switch (algorithm)
             {
                 case "Best":
-                    var compute = new BindBeggarAlgorithm(loggerFactory.CreateLogger("Compute"),new Random() ,players, user, url);
+                default:
+                    var compute = new BindBeggarAlgorithm(logger, new Random(), players, user, url, version, instanceId);
                     compute.Run();
                     break;
             }
