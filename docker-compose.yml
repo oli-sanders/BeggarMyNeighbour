@@ -22,6 +22,8 @@ services:
     environment:
       - ConnectionStrings__ScoreBoardDatabase=Data Source=/data/scoreboard.db
       - RabbitMq__HostName=beggareventbus
+      # Set SkipVerification=true to accept scores without replaying them through Beggar.Verify:
+      # - SkipVerification=true
       # Set UpstreamScoreboard__Url to forward qualifying scores to a parent scoreboard:
       # - UpstreamScoreboard__Url=https://parent-scoreboard.example.com/api/scores
     volumes:

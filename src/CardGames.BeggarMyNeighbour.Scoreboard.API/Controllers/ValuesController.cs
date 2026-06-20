@@ -24,6 +24,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Text;
@@ -40,14 +41,21 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
         private IConnectionFactory _connectionFactory;
         private readonly UpstreamScoreboardService _upstream;
         private readonly ILogger<ScoresController> _logger;
+        private readonly bool _skipVerification;
 
-        public ScoresController(ScoreBoardContext context, ThresholdService threshold, IConnectionFactory connectionFactory, UpstreamScoreboardService upstream, ILogger<ScoresController> logger)
+        public ScoresController(ScoreBoardContext context, ThresholdService threshold, IConnectionFactory connectionFactory, UpstreamScoreboardService upstream, IConfiguration configuration, ILogger<ScoresController> logger)
         {
             _context = context;
             _thresholdService = threshold;
             _connectionFactory = connectionFactory;
             _upstream = upstream;
             _logger = logger;
+            _skipVerification = string.Equals(
+                configuration["SkipVerification"], "true",
+                StringComparison.OrdinalIgnoreCase);
+
+            if (_skipVerification)
+                _logger.LogWarning("Score verification is DISABLED (SkipVerification=true). Scores will be marked unverified.");
         }
 
         // GET api/values
@@ -91,7 +99,8 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 _context.Scores.Add(dbvalue);
                 await _context.SaveChangesAsync();
 
-                SendGameToVerify(dbvalue);
+                if (!_skipVerification)
+                    SendGameToVerify(dbvalue);
 
                 // Forward to upstream scoreboard if this score qualifies for the local leaderboard.
                 if (dbvalue.Length >= current)
