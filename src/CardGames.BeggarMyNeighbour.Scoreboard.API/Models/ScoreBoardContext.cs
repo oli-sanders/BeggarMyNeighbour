@@ -33,6 +33,16 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
             : base(options)
         { }
         
-        public DbSet<Score> Scores { get; set; }   
+        public DbSet<Score> Scores { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Score>()
+                .HasIndex(s => new { s.Deck, s.Players })
+                .IsUnique();
+
+            modelBuilder.Entity<Score>()
+                .HasIndex(s => s.Submitted);
+        }
     }
 }

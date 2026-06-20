@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CardGames.BeggarMyNeighbour.Scoreboard.Web.Pages;
 
+public record StrategySummary(string Strategy, int BestScore, int Count);
+
 public class IndexModel : PageModel
 {
     private readonly ScoreboardClient _scoreboard;
@@ -39,15 +41,24 @@ public class IndexModel : PageModel
 
     public IReadOnlyList<string> Teams { get; private set; } = new List<string>();
 
+    public IReadOnlyList<StrategySummary> StrategySummaries { get; private set; } = new List<StrategySummary>();
+
     /// <summary>
     /// JSON array of {x, y, strategy} chart points drawn from the full (unfiltered) scoreboard.
     /// x = ISO 8601 submitted timestamp, y = move count.
     /// </summary>
     public string ChartDataJson { get; private set; } = "[]";
 
+    /// <summary>Number of games pending verification in the RabbitMQ queue, or null if unavailable.</summary>
+    public int? VerifyQueueDepth { get; private set; }
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        var all = await _scoreboard.GetTopScoresAsync(cancellationToken);
+        var allTask = _scoreboard.GetTopScoresAsync(pageSize: 1000, cancellationToken: cancellationToken);
+        var queueTask = _scoreboard.GetVerifyQueueDepthAsync(cancellationToken);
+
+        var all = await allTask;
+        VerifyQueueDepth = await queueTask;
 
         // Build the filter option lists from the full result set.
         Strategies = all.Select(s => s.Strategy)
@@ -63,6 +74,14 @@ public class IndexModel : PageModel
             .Distinct()
             .OrderBy(t => t)
             .ToList()!;
+
+        // Strategy comparison summary from the full unfiltered set.
+        StrategySummaries = all
+            .Where(s => !string.IsNullOrEmpty(s.Strategy))
+            .GroupBy(s => s.Strategy!)
+            .Select(g => new StrategySummary(g.Key, g.Max(s => s.Length), g.Count()))
+            .OrderByDescending(s => s.BestScore)
+            .ToList();
 
         IEnumerable<ScoreResponse> filtered = all;
 

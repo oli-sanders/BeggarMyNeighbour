@@ -78,6 +78,7 @@ services:
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarPlayers=4
 
   beggarcompute-bruteforce:
     <<: *compute-base
@@ -85,6 +86,7 @@ services:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
       - BeggarTeam=local
+      - BeggarPlayers=4
       - Algorithm=BruteForce
 
   beggarcompute-hillclimb:
@@ -92,6 +94,7 @@ services:
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarPlayers=4
       - Algorithm=HillClimb
 
   beggarcompute-annealing:
@@ -99,6 +102,7 @@ services:
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarPlayers=4
       - Algorithm=SimulatedAnnealing
 
   beggarcompute-genetic:
@@ -106,6 +110,7 @@ services:
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarPlayers=4
       - Algorithm=Genetic
 
 volumes:

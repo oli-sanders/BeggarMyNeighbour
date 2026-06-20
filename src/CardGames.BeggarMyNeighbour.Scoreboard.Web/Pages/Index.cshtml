@@ -3,9 +3,42 @@
 @{
     ViewData["Title"] = "Leaderboard";
 }
+<script>setTimeout(function(){ location.reload(); }, 30000);</script>
 
 <h1 class="display-5 mb-3">Beggar My Neighbour — Longest Games</h1>
-<p class="text-muted">The top games found so far, ranked by the number of moves (cards played) before the game ended.</p>
+<p class="text-muted">
+    The top games found so far, ranked by the number of moves (cards played) before the game ended.
+    @if (Model.VerifyQueueDepth.HasValue)
+    {
+        <span class="badge bg-info text-dark ms-2">@Model.VerifyQueueDepth pending verification</span>
+    }
+</p>
+
+@if (Model.StrategySummaries.Count > 0)
+{
+    <div class="mb-4">
+        <h5 class="text-muted">Strategy comparison</h5>
+        <table class="table table-sm table-bordered w-auto">
+            <thead class="table-light">
+                <tr>
+                    <th>Strategy</th>
+                    <th>Best score</th>
+                    <th>Games submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model.StrategySummaries)
+                {
+                    <tr>
+                        <td>@s.Strategy</td>
+                        <td><strong>@s.BestScore</strong></td>
+                        <td>@s.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
 
 <form method="get" class="row g-2 align-items-end mb-3">
     <div class="col-auto">

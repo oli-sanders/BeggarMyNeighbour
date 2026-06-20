@@ -20,6 +20,7 @@ SOFTWARE.
 */
 using System;
 using System.Reflection;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace CardGames.BeggarMyNeighbour.Compute
@@ -47,6 +48,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
             // A stable id for this running compute instance, reported with every game.
             var instanceId = Environment.GetEnvironmentVariable("InstanceId") ?? Guid.NewGuid().ToString();
             var team = Environment.GetEnvironmentVariable("BeggarTeam");
+            var players = int.TryParse(Environment.GetEnvironmentVariable("BeggarPlayers"), out var p) ? p : 4;
 
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -55,28 +57,33 @@ namespace CardGames.BeggarMyNeighbour.Compute
             });
 
             var logger = loggerFactory.CreateLogger("Compute");
-            logger.LogInformation("Compute starting. Version {Version}, Instance {InstanceId}, User {User}, Team {Team}", version, instanceId, user, team);
+            logger.LogInformation("Compute starting. Version {Version}, Instance {InstanceId}, User {User}, Team {Team}, Players {Players}", version, instanceId, user, team, players);
 
-            var players = 4;
+            // Allow graceful shutdown on SIGTERM / Ctrl-C.
+            using var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
 
             var rng = new Random();
             switch (algorithm)
             {
                 case "HillClimb":
-                    new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
+                    new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
                 case "SimulatedAnnealing":
-                    new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
+                    new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
                 case "Genetic":
-                    new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
+                    new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
                 case "BruteForce":
                 case "Best":
                 default:
-                    new BindBeggarAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
+                    new BindBeggarAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
             }
+
+            logger.LogInformation("Compute shut down gracefully.");
         }
     }
 }

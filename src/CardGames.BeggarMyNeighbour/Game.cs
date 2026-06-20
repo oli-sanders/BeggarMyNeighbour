@@ -77,7 +77,7 @@ namespace CardGames.BeggarMyNeighbour
             _logger?.LogDebug($"Moving to player {_players[CurrentPlayer].ID} Pos : {CurrentPlayer}");
         }
 
-        public int Play()
+        public int Play(int maxMoves = int.MaxValue)
         {
             var paycount = 0;
             CurrentPlayer = 0;
@@ -85,6 +85,8 @@ namespace CardGames.BeggarMyNeighbour
 
             while (_players.Count > 1)
             {
+                if (_cardsPlayed >= maxMoves)
+                    return _cardsPlayed;
                 int currentcard = PlayCard();                
 
                 if (paycount > 0)

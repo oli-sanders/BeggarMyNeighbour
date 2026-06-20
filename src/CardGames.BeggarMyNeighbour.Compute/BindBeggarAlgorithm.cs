@@ -20,6 +20,7 @@ SOFTWARE.
 */
 using System;
 using System.Linq;
+using System.Threading;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 
@@ -32,15 +33,16 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
        public override string Strategy => "brute-force";
 
-       public void Run()
+       public void Run(CancellationToken cancellationToken = default)
         {
             Logger.LogInformation("Brute-force (structural) starting");
 
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
+                var maxMoves = Math.Max(5000, Threshold * 3);
                 var genome = StructuredDeckUtils.RandomGenome(Rng);
                 var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
-                var result = new Game(deck, Players).Play();
+                var result = new Game(deck, Players).Play(maxMoves);
 
                 if (result > Threshold)
                     SubmitGame(deck, result);

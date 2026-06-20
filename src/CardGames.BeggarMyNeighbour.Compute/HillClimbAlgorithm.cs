@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 
@@ -12,17 +13,19 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public override string Strategy => "hill-climb";
 
-        public void Run()
+        public void Run(CancellationToken cancellationToken = default)
         {
             Logger.LogInformation("Hill-climb (structural) starting");
 
             var genome = StructuredDeckUtils.RandomGenome(Rng);
-            int currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players);
+            int maxMoves = Math.Max(5000, Threshold * 3);
+            int currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players, maxMoves: maxMoves);
 
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
+                maxMoves = Math.Max(5000, Threshold * 3);
                 var candidate = StructuredDeckUtils.Mutate(Rng, genome);
-                int candidateScore = StructuredDeckUtils.EvaluateBest(Rng, candidate, Players);
+                int candidateScore = StructuredDeckUtils.EvaluateBest(Rng, candidate, Players, maxMoves: maxMoves);
 
                 if (candidateScore >= currentScore)
                 {

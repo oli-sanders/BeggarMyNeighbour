@@ -26,6 +26,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using System.Text;
 using CardGames.BeggarMyNeighbour.Scoreboard.Models;
@@ -58,12 +59,22 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 _logger.LogWarning("Score verification is DISABLED (SkipVerification=true). Scores will be marked unverified.");
         }
 
-        // GET api/values
+        // GET api/scores?page=1&pageSize=100&players=4
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult Get([FromQuery] int page = 1, [FromQuery] int pageSize = 100, [FromQuery] int? players = null)
         {
-            //get top 1000 scores by lenght (number of moves)
-            var scores = _context.Scores.OrderByDescending(s => s.Length).Take(1000).Select(s => s.ToScoreResponse()).ToList();
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 1000) pageSize = 100;
+
+            var query = _context.Scores.OrderByDescending(s => s.Length).AsQueryable();
+            if (players.HasValue)
+                query = query.Where(s => s.Players == players.Value);
+
+            var scores = query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(s => s.ToScoreResponse())
+                .ToList();
             return Ok(scores);
         }
 
@@ -95,9 +106,18 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
 
                 var current = _thresholdService.UpdateThreshold(dbvalue.Length, dbvalue.Players);
 
-                //add and save to db
+                //add and save to db, ignoring exact duplicates (same deck + players)
                 _context.Scores.Add(dbvalue);
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateException)
+                {
+                    // Duplicate deck — return the current threshold without recording.
+                    _logger.LogInformation("Duplicate deck submission ignored for deck with {Length} moves", dbvalue.Length);
+                    return Ok(current);
+                }
 
                 if (!_skipVerification)
                     SendGameToVerify(dbvalue);

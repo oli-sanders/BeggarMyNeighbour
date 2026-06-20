@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 
 namespace CardGames.BeggarMyNeighbour.Compute
 {
@@ -26,12 +27,18 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public override string Strategy => "genetic";
 
-        public void Run()
+        public void Run(CancellationToken cancellationToken = default)
         {
             Logger.LogInformation("Genetic algorithm (structural) starting. Population={N}", PopulationSize);
 
-            var population = Enumerable.Range(0, PopulationSize)
-                .Select(_ => StructuredDeckUtils.RandomGenome(Rng))
+            // Seed initial population with top scoreboard genomes where available.
+            var seeds = FetchImmigrants();
+            Logger.LogInformation("Seeding initial population with {N} scoreboard genomes", seeds.Count);
+            var population = seeds
+                .Take(PopulationSize / 2)
+                .Concat(Enumerable.Range(0, PopulationSize - Math.Min(seeds.Count, PopulationSize / 2))
+                    .Select(_ => StructuredDeckUtils.RandomGenome(Rng)))
+                .Take(PopulationSize)
                 .ToList();
 
             int generation = 0;
@@ -39,12 +46,13 @@ namespace CardGames.BeggarMyNeighbour.Compute
             int stagnant = 0;
             double mutationRate = BaseMutationRate;
 
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
+                var maxMoves = Math.Max(5000, Threshold * 3);
                 // Parallel fitness evaluation — each thread uses its own RNG.
                 var scored = population
                     .AsParallel()
-                    .Select(g => (genome: g, score: StructuredDeckUtils.EvaluateBest(_threadRng.Value, g, Players)))
+                    .Select(g => (genome: g, score: StructuredDeckUtils.EvaluateBest(_threadRng.Value, g, Players, maxMoves: maxMoves)))
                     .OrderByDescending(x => x.score)
                     .ToList();
 
@@ -123,7 +131,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
             {
                 using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
                 var json = client.GetStringAsync(ScoreboardUrl).Result;
-                var array = Newtonsoft.Json.Linq.JArray.Parse(json);
+                var array = JArray.Parse(json);
                 return array
                     .Take(20)
                     .Select(item => item["Deck"]?.ToObject<List<int>>())

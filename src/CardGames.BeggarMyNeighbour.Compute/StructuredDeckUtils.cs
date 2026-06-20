@@ -90,13 +90,13 @@ namespace CardGames.BeggarMyNeighbour.Compute
         /// Evaluate a genome by playing <paramref name="trials"/> games with
         /// independently randomised gap distributions and returning the best score.
         /// </summary>
-        public static int EvaluateBest(Random rng, List<int> genome, int players, int trials = 3)
+        public static int EvaluateBest(Random rng, List<int> genome, int players, int trials = 3, int maxMoves = int.MaxValue)
         {
             int best = 0;
             for (int t = 0; t < trials; t++)
             {
                 var deck = BuildDeck(rng, genome);
-                int score = new BeggarMyNeighbour.Game(deck, players).Play();
+                int score = new BeggarMyNeighbour.Game(deck, players).Play(maxMoves);
                 if (score > best) best = score;
             }
             return best;

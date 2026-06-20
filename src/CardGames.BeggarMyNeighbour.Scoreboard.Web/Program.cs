@@ -13,6 +13,15 @@ builder.Services.AddHttpClient<ScoreboardClient>(client =>
     client.BaseAddress = new Uri(apiBaseUrl);
 });
 
+// Named client for the RabbitMQ management API (basic auth: guest/guest).
+builder.Services.AddHttpClient("rabbitmq", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(3);
+    var credentials = Convert.ToBase64String(System.Text.Encoding.ASCII.GetBytes("guest:guest"));
+    client.DefaultRequestHeaders.Authorization =
+        new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", credentials);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
