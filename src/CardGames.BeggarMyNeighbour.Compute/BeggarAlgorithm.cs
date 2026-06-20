@@ -80,7 +80,9 @@ namespace CardGames.BeggarMyNeighbour.Compute
         /// </summary>
         private string _instanceId;
 
-        public BeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId)
+        private string _team;
+
+        public BeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
         {
             _logger = logger;
             _players = players;
@@ -89,6 +91,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
             _scoreboardurl = scoreboardUrl;
             _version = version;
             _instanceId = instanceId;
+            _team = team;
         }
 
         /// <summary>
@@ -115,6 +118,8 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public string ScoreboardUrl => _scoreboardurl;
 
+        public string Team => _team;
+
         public void SubmitGame(List<int> deck, int length)
         {
             var mresult = new GameResult()
@@ -125,7 +130,8 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 Players = Players,
                 Version = Version,
                 Strategy = Strategy,
-                InstanceId = InstanceId
+                InstanceId = InstanceId,
+                Team = Team
             };
             Logger.LogInformation("found game of length {0} : {1}", length, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
             var t = HttpSendResult(mresult, _scoreboardurl);

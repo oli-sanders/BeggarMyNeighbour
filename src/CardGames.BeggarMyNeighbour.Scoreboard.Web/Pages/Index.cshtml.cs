@@ -27,11 +27,17 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? Players { get; set; }
 
+    /// <summary>Optional filter: only show games submitted by this team.</summary>
+    [BindProperty(SupportsGet = true)]
+    public string? Team { get; set; }
+
     public IReadOnlyList<ScoreResponse> Scores { get; private set; } = new List<ScoreResponse>();
 
     public IReadOnlyList<string> Strategies { get; private set; } = new List<string>();
 
     public IReadOnlyList<int> PlayerCounts { get; private set; } = new List<int>();
+
+    public IReadOnlyList<string> Teams { get; private set; } = new List<string>();
 
     /// <summary>
     /// JSON array of {x, y, strategy} chart points drawn from the full (unfiltered) scoreboard.
@@ -52,6 +58,12 @@ public class IndexModel : PageModel
 
         PlayerCounts = all.Select(s => s.Players).Distinct().OrderBy(p => p).ToList();
 
+        Teams = all.Select(s => s.Team)
+            .Where(t => !string.IsNullOrEmpty(t))
+            .Distinct()
+            .OrderBy(t => t)
+            .ToList()!;
+
         IEnumerable<ScoreResponse> filtered = all;
 
         if (!string.IsNullOrWhiteSpace(UserName))
@@ -67,6 +79,11 @@ public class IndexModel : PageModel
         if (Players.HasValue)
         {
             filtered = filtered.Where(s => s.Players == Players.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(Team))
+        {
+            filtered = filtered.Where(s => string.Equals(s.Team, Team, StringComparison.OrdinalIgnoreCase));
         }
 
         Scores = filtered.OrderByDescending(s => s.Length).ToList();

@@ -22,6 +22,8 @@ services:
     environment:
       - ConnectionStrings__ScoreBoardDatabase=Data Source=/data/scoreboard.db
       - RabbitMq__HostName=beggareventbus
+      # Set UpstreamScoreboard__Url to forward qualifying scores to a parent scoreboard:
+      # - UpstreamScoreboard__Url=https://parent-scoreboard.example.com/api/scores
     volumes:
       - beggar-data:/data
     ports:
@@ -80,6 +82,7 @@ services:
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarTeam=local
       - Algorithm=BruteForce
 
   beggarcompute-hillclimb:

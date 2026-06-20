@@ -47,6 +47,23 @@
         </select>
     </div>
     <div class="col-auto">
+        <label class="form-label" for="Team">Team</label>
+        <select class="form-select" id="Team" name="Team">
+            <option value="">any team</option>
+            @foreach (var team in Model.Teams)
+            {
+                if (team == Model.Team)
+                {
+                    <option value="@team" selected>@team</option>
+                }
+                else
+                {
+                    <option value="@team">@team</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto">
         <button class="btn btn-primary" type="submit">Filter</button>
         <a class="btn btn-outline-secondary" href="/">Reset</a>
     </div>
@@ -109,6 +126,7 @@ else
                 <th scope="col">#</th>
                 <th scope="col">Score (moves)</th>
                 <th scope="col">User</th>
+                <th scope="col">Team</th>
                 <th scope="col">Strategy</th>
                 <th scope="col">Version</th>
                 <th scope="col">Instance</th>
@@ -126,6 +144,7 @@ else
                     <td>@rank</td>
                     <td><strong>@score.Length</strong></td>
                     <td>@score.User</td>
+                    <td>@(score.Team ?? "—")</td>
                     <td>@score.Strategy</td>
                     <td>@score.Version</td>
                     <td><code class="small">@score.InstanceId</code></td>

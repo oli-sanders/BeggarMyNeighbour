@@ -54,6 +54,11 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
         /// </summary>
         public string InstanceId { get; set; }
 
+        /// <summary>
+        /// Team name the score was submitted under (e.g. "uni-lab").
+        /// </summary>
+        public string Team { get; set; }
+
         public DateTime Submitted { get; set; }
         public DateTime? Verified { get; set; }
     }

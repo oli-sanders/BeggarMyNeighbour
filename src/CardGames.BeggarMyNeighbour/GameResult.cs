@@ -48,5 +48,10 @@ namespace CardGames.BeggarMyNeighbour
         /// Identifier of the compute instance that found this game.
         /// </summary>
         public string InstanceId { get; set; }
+
+        /// <summary>
+        /// Team name the score was submitted under (e.g. "uni-lab").
+        /// </summary>
+        public string Team { get; set; }
     }
 }

@@ -46,6 +46,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
             // A stable id for this running compute instance, reported with every game.
             var instanceId = Environment.GetEnvironmentVariable("InstanceId") ?? Guid.NewGuid().ToString();
+            var team = Environment.GetEnvironmentVariable("BeggarTeam");
 
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -54,7 +55,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
             });
 
             var logger = loggerFactory.CreateLogger("Compute");
-            logger.LogInformation("Compute starting. Version {Version}, Instance {InstanceId}, User {User}", version, instanceId, user);
+            logger.LogInformation("Compute starting. Version {Version}, Instance {InstanceId}, User {User}, Team {Team}", version, instanceId, user, team);
 
             var players = 4;
 
@@ -62,18 +63,18 @@ namespace CardGames.BeggarMyNeighbour.Compute
             switch (algorithm)
             {
                 case "HillClimb":
-                    new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
                     break;
                 case "SimulatedAnnealing":
-                    new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
                     break;
                 case "Genetic":
-                    new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
                     break;
                 case "BruteForce":
                 case "Best":
                 default:
-                    new BindBeggarAlgorithm(logger, rng, players, user, url, version, instanceId).Run();
+                    new BindBeggarAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run();
                     break;
             }
         }

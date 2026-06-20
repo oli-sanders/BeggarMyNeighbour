@@ -47,6 +47,12 @@ builder.Services.AddSingleton<IConnectionFactory>(new ConnectionFactory
 });
 builder.Services.AddSingleton<IVerifyService, VerifyService>();
 
+builder.Services.AddHttpClient("upstream", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddSingleton<UpstreamScoreboardService>();
+
 // Allow the web front end (and any other origin) to read the scoreboard.
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));

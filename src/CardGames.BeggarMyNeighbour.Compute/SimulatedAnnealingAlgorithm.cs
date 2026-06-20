@@ -11,8 +11,8 @@ namespace CardGames.BeggarMyNeighbour.Compute
         private const double CoolingFactor = 0.9999;
         private const double MinTemperature = 1.0;
 
-        public SimulatedAnnealingAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId)
-            : base(logger, rng, players, user, scoreboardUrl, version, instanceId) { }
+        public SimulatedAnnealingAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
+            : base(logger, rng, players, user, scoreboardUrl, version, instanceId, team) { }
 
         public override string Strategy => "simulated-annealing";
 

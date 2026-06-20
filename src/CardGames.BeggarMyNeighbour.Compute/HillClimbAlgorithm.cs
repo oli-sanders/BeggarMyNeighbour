@@ -7,8 +7,8 @@ namespace CardGames.BeggarMyNeighbour.Compute
 {
     public class HillClimbAlgorithm : BeggarAlgorithm
     {
-        public HillClimbAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId)
-            : base(logger, rng, players, user, scoreboardUrl, version, instanceId) { }
+        public HillClimbAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
+            : base(logger, rng, players, user, scoreboardUrl, version, instanceId, team) { }
 
         public override string Strategy => "hill-climb";
 

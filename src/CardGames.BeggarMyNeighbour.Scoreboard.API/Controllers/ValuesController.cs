@@ -38,13 +38,15 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
         private ScoreBoardContext _context;
         private ThresholdService _thresholdService;
         private IConnectionFactory _connectionFactory;
+        private readonly UpstreamScoreboardService _upstream;
         private readonly ILogger<ScoresController> _logger;
 
-        public ScoresController(ScoreBoardContext context, ThresholdService threshold, IConnectionFactory connectionFactory, ILogger<ScoresController> logger)
+        public ScoresController(ScoreBoardContext context, ThresholdService threshold, IConnectionFactory connectionFactory, UpstreamScoreboardService upstream, ILogger<ScoresController> logger)
         {
             _context = context;
             _thresholdService = threshold;
             _connectionFactory = connectionFactory;
+            _upstream = upstream;
             _logger = logger;
         }
 
@@ -90,6 +92,10 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 await _context.SaveChangesAsync();
 
                 SendGameToVerify(dbvalue);
+
+                // Forward to upstream scoreboard if this score qualifies for the local leaderboard.
+                if (dbvalue.Length >= current)
+                    _upstream.ForwardInBackground(value);
 
                 return Ok(current);
             }

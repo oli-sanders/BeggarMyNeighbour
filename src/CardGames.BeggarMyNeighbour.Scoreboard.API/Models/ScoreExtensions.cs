@@ -48,7 +48,8 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
                 Players = request.Players,
                 Version = request.Version,
                 Strategy = String.IsNullOrEmpty(request.Strategy) ? "unknown" : request.Strategy,
-                InstanceId = request.InstanceId
+                InstanceId = request.InstanceId,
+                Team = request.Team
             };
             return score;
         }
@@ -65,7 +66,8 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
                 Players = value.Players,
                 Version = value.Version,
                 Strategy = value.Strategy,
-                InstanceId = value.InstanceId
+                InstanceId = value.InstanceId,
+                Team = value.Team
             };
             return scoreResponse;
         }
