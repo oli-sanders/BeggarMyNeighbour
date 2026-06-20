@@ -42,7 +42,7 @@ services:
     environment:
       - RabbitMqHostName=beggareventbus
 
-  beggarcompute:
+  x-compute-base: &compute-base
     image: beggar-compute
     build:
       context: ./src
@@ -52,6 +52,34 @@ services:
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+
+  beggarcompute-bruteforce:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - Algorithm=BruteForce
+
+  beggarcompute-hillclimb:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - Algorithm=HillClimb
+
+  beggarcompute-annealing:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - Algorithm=SimulatedAnnealing
+
+  beggarcompute-genetic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - Algorithm=Genetic
 
 volumes:
   beggar-data:
