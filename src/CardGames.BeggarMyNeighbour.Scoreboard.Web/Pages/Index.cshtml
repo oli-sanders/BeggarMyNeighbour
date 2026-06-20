@@ -52,6 +52,49 @@
     </div>
 </form>
 
+@if (Model.ChartDataJson != "[]")
+{
+    <div class="mb-4">
+        <h5 class="text-muted">Score history by strategy</h5>
+        <canvas id="scoreChart" height="100"></canvas>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script>
+    (function () {
+        var palette = {
+            "brute-force":         "rgba( 59,130,246,0.7)",
+            "hill-climb":          "rgba( 34,197, 94,0.7)",
+            "simulated-annealing": "rgba(249,115, 22,0.7)",
+            "genetic":             "rgba(239, 68, 68,0.7)",
+            "unknown":             "rgba(148,163,184,0.7)"
+        };
+        var raw = @Html.Raw(Model.ChartDataJson);
+        var grouped = {};
+        raw.forEach(function(p) {
+            var s = p.strategy || "unknown";
+            if (!grouped[s]) grouped[s] = [];
+            grouped[s].push({ x: p.x, y: p.y });
+        });
+        var datasets = Object.keys(grouped).map(function(s) {
+            var color = palette[s] || "rgba(100,100,100,0.7)";
+            return { label: s, data: grouped[s], backgroundColor: color, pointRadius: 3 };
+        });
+        new Chart(document.getElementById("scoreChart"), {
+            type: "scatter",
+            data: { datasets: datasets },
+            options: {
+                scales: {
+                    x: { type: "time", time: { unit: "minute" }, title: { display: true, text: "Submitted" } },
+                    y: { title: { display: true, text: "Moves" } }
+                },
+                plugins: { legend: { position: "top" } }
+            }
+        });
+    })();
+    </script>
+}
+
 @if (Model.Scores.Count == 0)
 {
     <div class="alert alert-info">
@@ -81,7 +124,7 @@ else
             {
                 <tr>
                     <td>@rank</td>
-                    <td><strong>@score.Lenght</strong></td>
+                    <td><strong>@score.Length</strong></td>
                     <td>@score.User</td>
                     <td>@score.Strategy</td>
                     <td>@score.Version</td>

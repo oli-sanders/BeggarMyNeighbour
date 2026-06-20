@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CardGames.BeggarMyNeighbour.Scoreboard.Models;
 using CardGames.BeggarMyNeighbour.Scoreboard.Web.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -32,6 +33,12 @@ public class IndexModel : PageModel
 
     public IReadOnlyList<int> PlayerCounts { get; private set; } = new List<int>();
 
+    /// <summary>
+    /// JSON array of {x, y, strategy} chart points drawn from the full (unfiltered) scoreboard.
+    /// x = ISO 8601 submitted timestamp, y = move count.
+    /// </summary>
+    public string ChartDataJson { get; private set; } = "[]";
+
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         var all = await _scoreboard.GetTopScoresAsync(cancellationToken);
@@ -62,6 +69,9 @@ public class IndexModel : PageModel
             filtered = filtered.Where(s => s.Players == Players.Value);
         }
 
-        Scores = filtered.OrderByDescending(s => s.Lenght).ToList();
+        Scores = filtered.OrderByDescending(s => s.Length).ToList();
+
+        ChartDataJson = JsonSerializer.Serialize(
+            all.Select(s => new { x = s.Submitted.ToString("o"), y = s.Length, strategy = s.Strategy ?? "unknown" }));
     }
 }

@@ -4,6 +4,12 @@ services:
     ports:
       - "5672:5672"    # AMQP
       - "15672:15672"  # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   scoreboard.api:
     image: beggar-scoreboard-api
@@ -11,7 +17,8 @@ services:
       context: ./src
       dockerfile: CardGames.BeggarMyNeighbour.Scoreboard.API/Dockerfile
     depends_on:
-      - beggareventbus
+      beggareventbus:
+        condition: service_healthy
     environment:
       - ConnectionStrings__ScoreBoardDatabase=Data Source=/data/scoreboard.db
       - RabbitMq__HostName=beggareventbus
@@ -19,6 +26,12 @@ services:
       - beggar-data:/data
     ports:
       - "8087:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   scoreboard.web:
     image: beggar-scoreboard-web
@@ -26,11 +39,18 @@ services:
       context: ./src
       dockerfile: CardGames.BeggarMyNeighbour.Scoreboard.Web/Dockerfile
     depends_on:
-      - scoreboard.api
+      scoreboard.api:
+        condition: service_healthy
     environment:
       - ScoreboardApi__BaseUrl=http://scoreboard.api:8080
     ports:
       - "8088:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   beggarverify:
     image: beggar-verify
@@ -38,7 +58,8 @@ services:
       context: ./src
       dockerfile: CardGames.BeggarMyNeighbour.Verify/Dockerfile
     depends_on:
-      - beggareventbus
+      beggareventbus:
+        condition: service_healthy
     environment:
       - RabbitMqHostName=beggareventbus
 
@@ -48,7 +69,8 @@ services:
       context: ./src
       dockerfile: CardGames.BeggarMyNeighbour.Compute/Dockerfile
     depends_on:
-      - scoreboard.api
+      scoreboard.api:
+        condition: service_healthy
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon

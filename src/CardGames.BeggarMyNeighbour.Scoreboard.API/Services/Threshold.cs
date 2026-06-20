@@ -91,16 +91,16 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
             {
                 var currentList = context.Scores
                     .Where(p => p.Players == numberOfPlayers)
-                    .OrderByDescending(r => r.Lenght)
+                    .OrderByDescending(r => r.Length)
                     .Take(ThresholdData.ScoreboardSize)
-                    .Select(r => r.Lenght)
+                    .Select(r => r.Length)
                     .ToList();
 
                 _thresholds.Add(new ThresholdData(currentList, numberOfPlayers));
             }
         }
 
-        public int UpdateThreshold(int lenght, int players)
+        public int UpdateThreshold(int length, int players)
         {
             ThresholdData current;
             lock (_thresholds)
@@ -108,13 +108,13 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
                 current = _thresholds.FirstOrDefault(t => t.Players == players);
                 if (current == null)
                 {
-                    current = new ThresholdData(new List<int> { lenght }, players);
+                    current = new ThresholdData(new List<int> { length }, players);
                     _thresholds.Add(current);
                     return current.Threshold;
                 }
             }
 
-            return current.UpdateThreshold(lenght);
+            return current.UpdateThreshold(length);
         }
     }
 }

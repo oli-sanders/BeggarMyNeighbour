@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using System.Text;
@@ -52,7 +53,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
         public IActionResult Get()
         {
             //get top 1000 scores by lenght (number of moves)
-            var scores = _context.Scores.OrderByDescending(s => s.Lenght).Take(1000).Select(s => s.ToScoreResponse()).ToList();
+            var scores = _context.Scores.OrderByDescending(s => s.Length).Take(1000).Select(s => s.ToScoreResponse()).ToList();
             return Ok(scores);
         }
 
@@ -74,6 +75,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
 
         // POST api/values
         [HttpPost]
+        [EnableRateLimiting("post-scores")]
         public async Task<IActionResult> Post([FromBody]ScoreRequest value)
         {
             if (ModelState.IsValid)
@@ -81,7 +83,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 //fix values
                 var dbvalue = value.ToScore();
 
-                var current = _thresholdService.UpdateThreshold(dbvalue.Lenght, dbvalue.Players);
+                var current = _thresholdService.UpdateThreshold(dbvalue.Length, dbvalue.Players);
 
                 //add and save to db
                 _context.Scores.Add(dbvalue);

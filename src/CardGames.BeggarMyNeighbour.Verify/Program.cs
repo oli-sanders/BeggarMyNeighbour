@@ -59,7 +59,7 @@ namespace CardGames.BeggarMyNeighbour.Verify
                     var response = new VerifyResponse()
                     {
                         id = game.id,
-                        success = game.Lenght == verifygameresult,
+                        success = game.Length == verifygameresult,
                         Verified = DateTime.UtcNow
                     };
                     

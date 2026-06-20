@@ -113,19 +113,21 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public string InstanceId => _instanceId;
 
-        public void SubmitGame(List<int> deck, int lenght)
+        public string ScoreboardUrl => _scoreboardurl;
+
+        public void SubmitGame(List<int> deck, int length)
         {
             var mresult = new GameResult()
             {
                 User = User,
-                Lenght = lenght,
+                Length = length,
                 Deck = deck,
                 Players = Players,
                 Version = Version,
                 Strategy = Strategy,
                 InstanceId = InstanceId
             };
-            Logger.LogInformation("found game of lenght {0} : {1}", lenght, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
+            Logger.LogInformation("found game of length {0} : {1}", length, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
             var t = HttpSendResult(mresult, _scoreboardurl);
 
             _threshold = t;
@@ -140,7 +142,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
             if (pollyresult.Outcome == OutcomeType.Failure)
             {
-                return result.Lenght;
+                return result.Length;
             }
 
             return pollyresult.Result;

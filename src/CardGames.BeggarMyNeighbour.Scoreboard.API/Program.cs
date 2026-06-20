@@ -18,8 +18,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+using System;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +51,21 @@ builder.Services.AddSingleton<IVerifyService, VerifyService>();
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
 
+// Limit score submissions to 30 per 10 seconds to guard against runaway workers.
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("post-scores", o =>
+    {
+        o.Window = TimeSpan.FromSeconds(10);
+        o.PermitLimit = 30;
+        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        o.QueueLimit = 5;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Ensure the database schema is up to date.
@@ -64,7 +83,9 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 });
 
 app.UseCors();
+app.UseRateLimiter();
 
+app.MapHealthChecks("/health");
 app.MapControllers();
 
 // Eagerly start the verification listener so verify responses are processed.

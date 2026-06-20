@@ -29,7 +29,7 @@ namespace CardGames.BeggarMyNeighbour
         /// <summary>
         /// The score for the game: the number of moves (cards played) before it ended.
         /// </summary>
-        public int Lenght { get; set; }
+        public int Length { get; set; }
 
         public List<int> Deck { get; set; }
         public int Players { get; set; }

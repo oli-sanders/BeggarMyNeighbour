@@ -57,7 +57,7 @@ Each game on the scoreboard records:
 | `Strategy`   | `brute-force`                          | Strategy used to find the game               |
 | `InstanceId` | `11111111-2222-3333-4444-555555555555` | Identifier of the compute instance           |
 | `User`       | `oli`                                  | Name the score was submitted under           |
-| `Lenght`     | `4000`                                 | The score: number of moves before game ended |
+| `Length`     | `4000`                                 | The score: number of moves before game ended |
 
 Only the 1000 highest-scoring games per player count are retained.
 

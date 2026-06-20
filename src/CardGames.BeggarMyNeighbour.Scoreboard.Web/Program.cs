@@ -4,6 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
+builder.Services.AddHealthChecks();
 
 // Typed client that reads the leaderboard from the Scoreboard API.
 var apiBaseUrl = builder.Configuration["ScoreboardApi:BaseUrl"] ?? "http://scoreboard.api";
@@ -28,6 +29,7 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.MapHealthChecks("/health");
 app.MapRazorPages();
 
 app.Run();

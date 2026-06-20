@@ -29,7 +29,9 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
         /// <summary>
         /// The score for the game: the number of moves (cards played) before it ended.
         /// </summary>
-        public int Lenght { get; set; }
+        public int Length { get; set; }
+
+        public System.DateTime Submitted { get; set; }
 
         public List<int> Deck { get; set; }
         public bool IsVerified { get; set; }
