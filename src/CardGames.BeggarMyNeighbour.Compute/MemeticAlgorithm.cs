@@ -118,7 +118,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
                     var p2 = parents[Rng.Next(parents.Count)];
                     var child = StructuredDeckUtils.Crossover(Rng, p1, p2);
                     if (Rng.NextDouble() < mutationRate)
-                        child = StructuredDeckUtils.Mutate(Rng, child);
+                        child = ApplyMutation(Rng, child);
                     nextGen.Add(LocalRefine(child, maxMoves, cancellationToken));
                 }
 
@@ -138,7 +138,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
             for (int step = 0; step < LocalSearchSteps && !ct.IsCancellationRequested; step++)
             {
-                var candidate = StructuredDeckUtils.Mutate(Rng, current);
+                var candidate = ApplyMutation(Rng, current);
                 int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves);
                 if (candidateScore > currentScore)
                 {

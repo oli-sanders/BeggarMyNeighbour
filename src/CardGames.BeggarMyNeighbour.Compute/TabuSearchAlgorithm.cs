@@ -54,7 +54,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
                 for (int n = 0; n < NeighborhoodSize; n++)
                 {
-                    var candidate = StructuredDeckUtils.Mutate(Rng, genome);
+                    var candidate = ApplyMutation(Rng, genome);
                     int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves);
                     int hash = GetGenomeHash(candidate);
                     bool isTabu = tabuSet.Contains(hash);

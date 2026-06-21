@@ -104,7 +104,7 @@ public GeneticAlgorithm(ILogger logger, Random rng, int players, string user, st
                     var p2 = parents[Rng.Next(parents.Count)];
                     var child = StructuredDeckUtils.Crossover(Rng, p1, p2);
                     if (Rng.NextDouble() < mutationRate)
-                        child = StructuredDeckUtils.Mutate(Rng, child);
+                        child = ApplyMutation(Rng, child);
                     nextGen.Add(child);
                 }
 

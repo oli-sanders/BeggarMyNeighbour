@@ -78,6 +78,70 @@ namespace CardGames.BeggarMyNeighbour.Compute
             return pictures.Concat(gaps).ToList();
         }
 
+        /// <summary>
+        /// Heuristic mutation: applies one of three targeted operators derived from
+        /// pattern analysis of top-scoring decks, falling back to the standard operator
+        /// 25% of the time.
+        ///   - Ace-avoidance  (25%): moves an Ace from the high end of the picture
+        ///     sequence (positions 12-15) to a lower position. Aces clustered at the
+        ///     end correlate strongly with lower scores.
+        ///   - K→Q promotion  (25%): swaps the card after a King with a Queen from
+        ///     elsewhere, creating the King-then-Queen adjacency that correlates with
+        ///     longer payment chains.
+        ///   - Gap redistribution (25%): moves a number card from the first-third of
+        ///     gaps (0-5) into the middle third (6-10). Top scorers have fewer number
+        ///     cards front-loaded in the deck.
+        ///   - Standard Mutate (25%): preserves normal search diversity.
+        /// </summary>
+        public static List<int> HeuristicMutate(Random rng, List<int> genome)
+        {
+            double roll = rng.NextDouble();
+            if (roll < 0.25) return AceSpreadMutate(rng, genome);
+            if (roll < 0.50) return KingQueenMutate(rng, genome);
+            if (roll < 0.75) return GapRedistributeMutate(rng, genome);
+            return Mutate(rng, genome);
+        }
+
+        private static List<int> AceSpreadMutate(Random rng, List<int> genome)
+        {
+            var next = new List<int>(genome);
+            var highAces = Enumerable.Range(12, 4).Where(i => next[i] == 4).ToList();
+            if (highAces.Count == 0) return Mutate(rng, genome);
+            int from = highAces[rng.Next(highAces.Count)];
+            int to = rng.Next(12);
+            (next[from], next[to]) = (next[to], next[from]);
+            return next;
+        }
+
+        private static List<int> KingQueenMutate(Random rng, List<int> genome)
+        {
+            var next = new List<int>(genome);
+            var targetKings = Enumerable.Range(0, PictureCount - 1)
+                .Where(i => next[i] == 3 && next[i + 1] != 2)
+                .ToList();
+            if (targetKings.Count == 0) return Mutate(rng, genome);
+            int kingPos = targetKings[rng.Next(targetKings.Count)];
+            var queens = Enumerable.Range(0, PictureCount)
+                .Where(i => next[i] == 2 && i != kingPos + 1)
+                .ToList();
+            if (queens.Count == 0) return Mutate(rng, genome);
+            int queenPos = queens[rng.Next(queens.Count)];
+            (next[kingPos + 1], next[queenPos]) = (next[queenPos], next[kingPos + 1]);
+            return next;
+        }
+
+        private static List<int> GapRedistributeMutate(Random rng, List<int> genome)
+        {
+            var next = new List<int>(genome);
+            var sources = Enumerable.Range(PictureCount, 6).Where(i => next[i] > 0).ToList();
+            if (sources.Count == 0) return Mutate(rng, genome);
+            int from = sources[rng.Next(sources.Count)];
+            int to = PictureCount + 6 + rng.Next(5); // gaps 6-10
+            next[from]--;
+            next[to]++;
+            return next;
+        }
+
         /// <summary>Mutates either the picture card order (swap) or the gap distribution (shift).</summary>
         public static List<int> Mutate(Random rng, List<int> genome)
         {

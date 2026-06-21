@@ -94,7 +94,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
             while (stagnation < LocalSearchStagnationLimit && !ct.IsCancellationRequested)
             {
                 IncrementIteration();
-                var candidate = StructuredDeckUtils.Mutate(Rng, genome);
+                var candidate = ApplyMutation(Rng, genome);
                 int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves);
 
                 if (candidateScore >= currentScore)

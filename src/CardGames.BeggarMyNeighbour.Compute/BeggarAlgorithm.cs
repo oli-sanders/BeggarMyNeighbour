@@ -142,6 +142,14 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public Random Rng => _rng;
 
+        /// <summary>
+        /// Override in subclasses to swap in a different mutation operator (e.g. heuristic).
+        /// The <paramref name="rng"/> parameter is passed explicitly so parallel algorithms
+        /// can supply thread-local instances.
+        /// </summary>
+        protected virtual List<int> ApplyMutation(Random rng, List<int> genome) =>
+            StructuredDeckUtils.Mutate(rng, genome);
+
         public int Players => _players;
 
         public int Threshold => _threshold;

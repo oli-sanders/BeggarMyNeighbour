@@ -136,5 +136,34 @@ services:
       - BeggarPlayers=4
       - Algorithm=TabuSearch
 
+  # --- Heuristic variants (domain-informed mutations from pattern analysis) ---
+
+  beggarcompute-ils-heuristic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=IteratedLocalSearchHeuristic
+
+  beggarcompute-annealing-heuristic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=SimulatedAnnealingHeuristic
+
+  beggarcompute-memetic-heuristic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=MemeticHeuristic
+
 volumes:
   beggar-data:

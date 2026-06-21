@@ -91,6 +91,15 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 case "TabuSearch":
                     new TabuSearchAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
+                case "IteratedLocalSearchHeuristic":
+                    new IteratedLocalSearchHeuristicAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "SimulatedAnnealingHeuristic":
+                    new SimulatedAnnealingHeuristicAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "MemeticHeuristic":
+                    new MemeticHeuristicAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
                 case "BruteForce":
                 case "Best":
                 default:

@@ -44,7 +44,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 IncrementIteration();
                 maxMoves = Math.Max(5000, Threshold * 3);
 
-                var candidate = StructuredDeckUtils.Mutate(Rng, genome);
+                var candidate = ApplyMutation(Rng, genome);
                 int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves);
                 int delta = candidateScore - currentScore;
 
