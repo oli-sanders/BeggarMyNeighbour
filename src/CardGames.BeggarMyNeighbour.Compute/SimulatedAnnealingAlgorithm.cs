@@ -17,20 +17,21 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public override string Strategy => "simulated-annealing";
 
-        public void Run(CancellationToken cancellationToken = default)
+        protected override void DoRun(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Simulated annealing (structural) starting. T0={T}", InitialTemperature);
 
             var genome = StructuredDeckUtils.RandomGenome(Rng);
             int maxMoves = Math.Max(5000, Threshold * 3);
-            int currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players, maxMoves: maxMoves);
+            int currentScore = StructuredDeckUtils.EvaluateBest(genome, Players, maxMoves: maxMoves);
             double T = InitialTemperature;
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                IncrementIteration();
                 maxMoves = Math.Max(5000, Threshold * 3);
                 var candidate = StructuredDeckUtils.Mutate(Rng, genome);
-                int candidateScore = StructuredDeckUtils.EvaluateBest(Rng, candidate, Players, maxMoves: maxMoves);
+                int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves: maxMoves);
                 int delta = candidateScore - currentScore;
 
                 if (delta >= 0 || Rng.NextDouble() < Math.Exp(delta / T))
@@ -38,9 +39,9 @@ namespace CardGames.BeggarMyNeighbour.Compute
                     genome = candidate;
                     currentScore = candidateScore;
 
-                    if (delta > 0 && currentScore > Threshold)
+                    if (currentScore > Threshold)
                     {
-                        var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
+                        var deck = StructuredDeckUtils.BuildDeck(genome);
                         SubmitGame(deck, new Game(deck, Players).Play());
                         T = InitialTemperature; // reheat to keep exploring
                         continue;
@@ -52,7 +53,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 if (T <= MinTemperature)
                 {
                     genome = StructuredDeckUtils.RandomGenome(Rng);
-                    currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players, maxMoves: maxMoves);
+                    currentScore = StructuredDeckUtils.EvaluateBest(genome, Players, maxMoves: maxMoves);
                     T = InitialTemperature;
                     Logger.LogInformation("Annealing cycle complete, reseeding");
                 }

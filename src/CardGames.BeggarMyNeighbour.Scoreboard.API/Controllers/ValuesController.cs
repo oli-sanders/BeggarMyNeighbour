@@ -59,6 +59,58 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 _logger.LogWarning("Score verification is DISABLED (SkipVerification=true). Scores will be marked unverified.");
         }
 
+        // GET api/scores/threshold?players=4&strategy=hill-climb
+        [HttpGet("threshold")]
+        public IActionResult GetThreshold([FromQuery] int players, [FromQuery] string strategy)
+        {
+            if (players < 2) return BadRequest("players must be >= 2");
+            if (string.IsNullOrEmpty(strategy)) return BadRequest("strategy is required");
+            return Ok(_thresholdService.GetThreshold(players, strategy));
+        }
+
+        // GET api/scores/history?players=4&limit=5000
+        // Returns scores ordered by submission time (oldest first) for charting historical progress.
+        // Downsampled: returns at most one score per minute per strategy (the best in that bucket).
+        [HttpGet("history")]
+        public IActionResult GetHistory([FromQuery] int? players = null, [FromQuery] int limit = 5000)
+        {
+            if (limit < 1 || limit > 20000) limit = 5000;
+
+            var query = _context.Scores.AsQueryable();
+            if (players.HasValue)
+                query = query.Where(s => s.Players == players.Value);
+
+            // Pull all scores ordered by time, then downsample in memory to keep the
+            // response small: keep the best score per (strategy, minute) bucket.
+            var raw = query
+                .OrderBy(s => s.Submitted)
+                .Select(s => new { s.Strategy, s.Submitted, s.Length })
+                .ToList();
+
+            var seen = new Dictionary<string, int>(); // key: "strategy|yyyyMMddHHmm", value: best Length
+            var sampled = new List<(string Strategy, DateTime Submitted, int Length)>();
+
+            foreach (var r in raw)
+            {
+                var bucket = $"{r.Strategy}|{r.Submitted:yyyyMMddHHmm}";
+                if (!seen.TryGetValue(bucket, out var best) || r.Length > best)
+                {
+                    seen[bucket] = r.Length;
+                    sampled.RemoveAll(x => x.Strategy == r.Strategy &&
+                                          x.Submitted.ToString("yyyyMMddHHmm") == r.Submitted.ToString("yyyyMMddHHmm"));
+                    sampled.Add((r.Strategy, r.Submitted, r.Length));
+                }
+            }
+
+            var result = sampled
+                .OrderBy(x => x.Submitted)
+                .Take(limit)
+                .Select(x => new { strategy = x.Strategy, submitted = x.Submitted, length = x.Length })
+                .ToList();
+
+            return Ok(result);
+        }
+
         // GET api/scores?page=1&pageSize=100&players=4
         [HttpGet]
         public IActionResult Get([FromQuery] int page = 1, [FromQuery] int pageSize = 100, [FromQuery] int? players = null)
@@ -104,7 +156,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Controllers
                 //fix values
                 var dbvalue = value.ToScore();
 
-                var current = _thresholdService.UpdateThreshold(dbvalue.Length, dbvalue.Players);
+                var current = _thresholdService.UpdateThreshold(dbvalue.Length, dbvalue.Players, dbvalue.Strategy);
 
                 //add and save to db, ignoring exact duplicates (same deck + players)
                 _context.Scores.Add(dbvalue);

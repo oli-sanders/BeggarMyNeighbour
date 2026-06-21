@@ -55,9 +55,11 @@ public class IndexModel : PageModel
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
         var allTask = _scoreboard.GetTopScoresAsync(pageSize: 1000, cancellationToken: cancellationToken);
+        var historyTask = _scoreboard.GetHistoryAsync(limit: 5000, cancellationToken: cancellationToken);
         var queueTask = _scoreboard.GetVerifyQueueDepthAsync(cancellationToken);
 
         var all = await allTask;
+        var history = await historyTask;
         VerifyQueueDepth = await queueTask;
 
         // Build the filter option lists from the full result set.
@@ -108,6 +110,6 @@ public class IndexModel : PageModel
         Scores = filtered.OrderByDescending(s => s.Length).ToList();
 
         ChartDataJson = JsonSerializer.Serialize(
-            all.Select(s => new { x = s.Submitted.ToString("o"), y = s.Length, strategy = s.Strategy ?? "unknown" }));
+            history.Select(h => new { x = h.Submitted.ToString("o"), y = h.Length, strategy = h.Strategy ?? "unknown" }));
     }
 }

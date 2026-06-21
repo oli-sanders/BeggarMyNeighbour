@@ -33,15 +33,16 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
        public override string Strategy => "brute-force";
 
-       public void Run(CancellationToken cancellationToken = default)
+       protected override void DoRun(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Brute-force (structural) starting");
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                IncrementIteration();
                 var maxMoves = Math.Max(5000, Threshold * 3);
                 var genome = StructuredDeckUtils.RandomGenome(Rng);
-                var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
+                var deck = StructuredDeckUtils.BuildDeck(genome);
                 var result = new Game(deck, Players).Play(maxMoves);
 
                 if (result > Threshold)

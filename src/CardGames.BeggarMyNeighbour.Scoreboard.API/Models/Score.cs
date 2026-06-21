@@ -59,6 +59,8 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
         /// </summary>
         public string Team { get; set; }
 
+        public long? Iteration { get; set; }
+
         public DateTime Submitted { get; set; }
         public DateTime? Verified { get; set; }
     }

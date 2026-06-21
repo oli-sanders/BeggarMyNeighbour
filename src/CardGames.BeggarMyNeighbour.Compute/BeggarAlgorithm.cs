@@ -20,6 +20,7 @@ SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
@@ -58,7 +59,10 @@ namespace CardGames.BeggarMyNeighbour.Compute
         /// <remarks>
         /// set default to 2000 wil be replaced on first submission.
         /// </remarks>
-        private int _threshold = 2000;
+        private volatile int _threshold = 2000;
+        private int _bestSubmitted = 0;
+        private long _iteration = 0;
+        private readonly object _submitLock = new object();
 
         /// <summary>
         /// store username to submit scores as
@@ -100,6 +104,38 @@ namespace CardGames.BeggarMyNeighbour.Compute
         public abstract string Strategy { get; }
 
         /// <summary>
+        /// Fetches the current threshold from the scoreboard for this algorithm's
+        /// (players, strategy) bucket and updates the local threshold accordingly.
+        /// Falls back to the existing value if the scoreboard is unreachable.
+        /// </summary>
+        private void FetchThreshold()
+        {
+            try
+            {
+                var thresholdUrl = $"{_scoreboardurl}/threshold?players={_players}&strategy={Uri.EscapeDataString(Strategy)}";
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                var result = client.GetStringAsync(thresholdUrl).Result;
+                if (int.TryParse(result, out var t))
+                {
+                    _threshold = t;
+                    _logger.LogInformation("Fetched initial threshold for {Strategy}/{Players}p: {Threshold}", Strategy, _players, t);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not fetch threshold for {Strategy}/{Players}p, using default {Default}", Strategy, _players, _threshold);
+            }
+        }
+
+        public void Run(CancellationToken cancellationToken = default)
+        {
+            FetchThreshold();
+            DoRun(cancellationToken);
+        }
+
+        protected abstract void DoRun(CancellationToken cancellationToken);
+
+        /// <summary>
         /// Expose logger to derived
         /// </summary>
         public ILogger Logger => _logger;
@@ -109,6 +145,11 @@ namespace CardGames.BeggarMyNeighbour.Compute
         public int Players => _players;
 
         public int Threshold => _threshold;
+        public int BestSubmitted => _bestSubmitted;
+
+        public long Iteration => _iteration;
+
+        public void IncrementIteration() => Interlocked.Increment(ref _iteration);
 
         public string User => _user;
 
@@ -122,6 +163,13 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
         public void SubmitGame(List<int> deck, int length)
         {
+            lock (_submitLock)
+            {
+                if (length <= _bestSubmitted)
+                    return;
+                _bestSubmitted = length;
+            }
+
             var mresult = new GameResult()
             {
                 User = User,
@@ -131,11 +179,11 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 Version = Version,
                 Strategy = Strategy,
                 InstanceId = InstanceId,
-                Team = Team
+                Team = Team,
+                Iteration = Interlocked.Read(ref _iteration)
             };
             Logger.LogInformation("found game of length {0} : {1}", length, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
             var t = HttpSendResult(mresult, _scoreboardurl);
-
             _threshold = t;
         }
 

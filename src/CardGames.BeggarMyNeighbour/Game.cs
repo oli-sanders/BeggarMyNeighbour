@@ -42,7 +42,7 @@ namespace CardGames.BeggarMyNeighbour
         {
             _logger = logger;
             _players = new List<Player>();
-            _deck = deck;
+            _deck = new List<int>(deck);
             for (int i = 0; i < players; i++)
             {
                 _players.Add(new Player(i));
@@ -115,7 +115,8 @@ namespace CardGames.BeggarMyNeighbour
                     if (paycount == 0)
                     {
                         //player has lost the penalty give stack to previous
-                        _players.Find(p => p.ID == PreviousPlayer).AddStack(_stack);
+                        // PreviousPlayer may have been eliminated (played their last card as a picture) — guard against null.
+                        _players.Find(p => p.ID == PreviousPlayer)?.AddStack(_stack);
                         _logger?.LogInformation($"{_players[CurrentPlayer].ID} pos : {CurrentPlayer} has lost the penalty the stack goes to {PreviousPlayer} pos : {_players.FindIndex(p => p.ID == PreviousPlayer)}");
                         PreviousPlayer = -1;
                     }

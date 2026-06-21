@@ -8,35 +8,57 @@ namespace CardGames.BeggarMyNeighbour.Compute
 {
     public class HillClimbAlgorithm : BeggarAlgorithm
     {
+        private const int StagnationLimit = 10_000;
+
         public HillClimbAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
             : base(logger, rng, players, user, scoreboardUrl, version, instanceId, team) { }
 
         public override string Strategy => "hill-climb";
 
-        public void Run(CancellationToken cancellationToken = default)
+        protected override void DoRun(CancellationToken cancellationToken)
         {
             Logger.LogInformation("Hill-climb (structural) starting");
 
             var genome = StructuredDeckUtils.RandomGenome(Rng);
             int maxMoves = Math.Max(5000, Threshold * 3);
-            int currentScore = StructuredDeckUtils.EvaluateBest(Rng, genome, Players, maxMoves: maxMoves);
+            int currentScore = StructuredDeckUtils.EvaluateBest(genome, Players, maxMoves: maxMoves);
+            int stagnation = 0;
 
             while (!cancellationToken.IsCancellationRequested)
             {
+                IncrementIteration();
                 maxMoves = Math.Max(5000, Threshold * 3);
                 var candidate = StructuredDeckUtils.Mutate(Rng, genome);
-                int candidateScore = StructuredDeckUtils.EvaluateBest(Rng, candidate, Players, maxMoves: maxMoves);
+                int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves: maxMoves);
 
-                if (candidateScore >= currentScore)
+                if (candidateScore > currentScore)
                 {
                     genome = candidate;
                     currentScore = candidateScore;
+                    stagnation = 0;
+
+                    if (currentScore > Threshold)
+                    {
+                        var deck = StructuredDeckUtils.BuildDeck(genome);
+                        SubmitGame(deck, new Game(deck, Players).Play());
+                    }
+                }
+                else if (candidateScore == currentScore)
+                {
+                    genome = candidate; // accept lateral moves without re-submitting
+                    stagnation++;
+                }
+                else
+                {
+                    stagnation++;
                 }
 
-                if (currentScore > Threshold)
+                if (stagnation >= StagnationLimit)
                 {
-                    var deck = StructuredDeckUtils.BuildDeck(Rng, genome);
-                    SubmitGame(deck, new Game(deck, Players).Play());
+                    Logger.LogInformation("Hill-climb stagnated after {N} iterations, reseeding", stagnation);
+                    genome = StructuredDeckUtils.RandomGenome(Rng);
+                    currentScore = StructuredDeckUtils.EvaluateBest(genome, Players, maxMoves: maxMoves);
+                    stagnation = 0;
                 }
             }
         }

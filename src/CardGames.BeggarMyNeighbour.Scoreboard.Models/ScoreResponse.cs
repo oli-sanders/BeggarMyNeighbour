@@ -56,5 +56,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
         /// Team name the score was submitted under (e.g. "uni-lab").
         /// </summary>
         public string Team { get; set; }
+
+        public long? Iteration { get; set; }
     }
 }

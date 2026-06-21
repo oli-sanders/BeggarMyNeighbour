@@ -70,11 +70,26 @@ namespace CardGames.BeggarMyNeighbour.Compute
                 case "HillClimb":
                     new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
+                case "HillClimbParallel":
+                    new HillClimbParallelAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "IteratedLocalSearch":
+                    new IteratedLocalSearchAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
                 case "SimulatedAnnealing":
                     new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
+                case "SimulatedAnnealingAdaptive":
+                    new SimulatedAnnealingAdaptiveAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
                 case "Genetic":
                     new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "Memetic":
+                    new MemeticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "TabuSearch":
+                    new TabuSearchAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
                 case "BruteForce":
                 case "Best":

@@ -1,3 +1,12 @@
+x-compute-base: &compute-base
+  image: beggar-compute
+  build:
+    context: ./src
+    dockerfile: CardGames.BeggarMyNeighbour.Compute/Dockerfile
+  depends_on:
+    scoreboard.api:
+      condition: service_healthy
+
 services:
   beggareventbus:
     image: rabbitmq:3-management
@@ -67,18 +76,7 @@ services:
     environment:
       - RabbitMqHostName=beggareventbus
 
-  x-compute-base: &compute-base
-    image: beggar-compute
-    build:
-      context: ./src
-      dockerfile: CardGames.BeggarMyNeighbour.Compute/Dockerfile
-    depends_on:
-      scoreboard.api:
-        condition: service_healthy
-    environment:
-      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
-      - BeggarUser=anon
-      - BeggarPlayers=4
+  # --- Original algorithms ---
 
   beggarcompute-bruteforce:
     <<: *compute-base
@@ -89,29 +87,54 @@ services:
       - BeggarPlayers=4
       - Algorithm=BruteForce
 
-  beggarcompute-hillclimb:
-    <<: *compute-base
-    environment:
-      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
-      - BeggarUser=anon
-      - BeggarPlayers=4
-      - Algorithm=HillClimb
-
   beggarcompute-annealing:
     <<: *compute-base
+    scale: 1
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarTeam=local
       - BeggarPlayers=4
       - Algorithm=SimulatedAnnealing
 
-  beggarcompute-genetic:
+  # --- Improved variants for comparison ---
+
+  beggarcompute-ils:
     <<: *compute-base
     environment:
       - ScoreboardUrl=http://scoreboard.api:8080/api/scores
       - BeggarUser=anon
+      - BeggarTeam=local
       - BeggarPlayers=4
-      - Algorithm=Genetic
+      - Algorithm=IteratedLocalSearch
+
+  beggarcompute-annealing-adaptive:
+    <<: *compute-base
+    scale: 1
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=SimulatedAnnealingAdaptive
+
+  beggarcompute-memetic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=Memetic
+
+  beggarcompute-tabu:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=TabuSearch
 
 volumes:
   beggar-data:

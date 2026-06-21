@@ -161,9 +161,9 @@ else
                 <th scope="col">User</th>
                 <th scope="col">Team</th>
                 <th scope="col">Strategy</th>
-                <th scope="col">Version</th>
-                <th scope="col">Instance</th>
+                <th scope="col">Iteration</th>
                 <th scope="col">Players</th>
+                <th scope="col">Submitted</th>
                 <th scope="col">Verified</th>
             </tr>
         </thead>
@@ -179,9 +179,9 @@ else
                     <td>@score.User</td>
                     <td>@(score.Team ?? "—")</td>
                     <td>@score.Strategy</td>
-                    <td>@score.Version</td>
-                    <td><code class="small">@score.InstanceId</code></td>
+                    <td>@(score.Iteration.HasValue ? score.Iteration.Value.ToString("N0") : "—")</td>
                     <td>@score.Players</td>
+                    <td><span title="@score.Submitted.ToString("o")">@score.Submitted.ToString("yyyy-MM-dd HH:mm:ss")</span></td>
                     <td>
                         @if (score.IsVerified)
                         {

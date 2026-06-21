@@ -1,136 +1,126 @@
 # Beggar My Neighbour
 
-[![BCH compliance](https://bettercodehub.com/edge/badge/oli-sanders/BeggarMyNeighbour?branch=master)](https://bettercodehub.com/)
+A distributed system for finding long games of the card game *Beggar My Neighbour*. Multiple search workers run in Docker containers, each using a different algorithm to explore the deck space and submit high-scoring games to a shared scoreboard.
 
-I have always wanted to know if the card game "Beggar my Neighbour" can ever get into an infinite loop.
-I have also been wanting to experiment with ASP.NET Core and containerised microservices, so I wrote a distributed system to find the longest games of "Beggar my Neighbour".
+## Documentation
 
-### Technologies Used
-- [.NET 8](https://dotnet.microsoft.com/) (ASP.NET Core, Razor Pages, EF Core)
-- [Docker](https://www.docker.com/) / Docker Compose
-- [RabbitMQ](http://www.rabbitmq.com/)
-- [SQLite](https://www.sqlite.org/)
+- [Architecture](docs/architecture.md) — services, data flow, verification pipeline, database schema
+- [Search Algorithms](docs/algorithms.md) — genome representation, all algorithms, how to add a new one
+- [API Reference](docs/api.md) — all endpoints with request/response schemas
+- [Configuration](docs/configuration.md) — environment variables for every service
 
-## Basic algorithm for beggar my neighbour
+## The Game
 
-1. Deal all the cards in the deck face down. No players look at their cards or shuffles their hand.
-2. Each player plays the top card from their hand and places it in a pile face up until a picture card is played.
-3. When a picture card is played, the next player has to pay:
-	1 card for a Jack;
-	2 for a Queen;
-	3 for a King;
-	4 for an Ace.
-4. If another picture card is played while the player is paying for the previous picture card then the next player must pay for the new picture card.
-5. When no cards are owed (i.e. the picture card has been paid for without another picture card being played) then the player that played the picture card gets the pile and places it at the bottom of their hand with the cards face down. This player then plays a new card starting a new pile.
-6. As soon as a player plays their last card they are out and the next player continues from where the previous player was (e.g. if the previous player still had 2 cards left to play then the new player must pay those 2 cards.)
-7. The last player in the game wins.
+Beggar My Neighbour is a deterministic card game: once the deck is shuffled, the outcome is fully determined by the card order. No decisions are made by players.
 
-## Services
+Rules:
+1. Deal all cards face down. No player looks at or shuffles their hand.
+2. Each player plays the top card from their hand face up onto a central pile until a picture card appears.
+3. When a picture card is played, the next player must pay: 1 card for a Jack, 2 for a Queen, 3 for a King, 4 for an Ace.
+4. If a picture card is played during a payment, the payment obligation passes to the next player.
+5. If the payment completes without a picture card being played, the player who played the original picture card wins the pile and adds it to the bottom of their hand.
+6. A player who plays their last card is eliminated. The last player remaining wins.
 
-### Beggar.Compute
-Plays virtual games of "Beggar my Neighbour" and submits long games to the scoreboard API service.
-Can be run remotely and submits scores without authentication.
-Each submission records the **version** of the compute client, the **strategy** used (e.g. `brute-force`),
-a per-process **instance id**, the **user** name, and the **score** (the number of moves before the game ended).
+The key open question: can the game ever loop infinitely? This system searches for extremely long (potentially non-terminating) games.
 
-### Beggar.Scoreboard.API
-Back end for the scoreboard. Stores the current high scores in SQLite (via EF Core) and keeps the **top 1000 games**
-(by number of moves) for each player count.
-Receives new scores from Beggar.Compute instances and retrieves scores for the web front end.
+## Technologies
 
-### Beggar.Verify
-Runs alongside the scoreboard API service to verify received games from anonymous clients by replaying the deck.
+- [.NET 8](https://dotnet.microsoft.com/) — ASP.NET Core Web API, Razor Pages, EF Core
+- [SQLite](https://www.sqlite.org/) — scoreboard persistence
+- [RabbitMQ](https://www.rabbitmq.com/) — async verification pipeline
+- [Docker](https://www.docker.com/) / Docker Compose — containerised deployment
 
-Communicates with the scoreboard using [RabbitMQ](http://www.rabbitmq.com/).
-
-### Beggar.Scoreboard.Web
-Web front end for the scoreboard. Presents the leaderboard and lets you filter the top games by user, strategy and
-number of players. Reads the scores from the Beggar.Scoreboard.API.
-
-## Scoreboard data model
-
-Each game on the scoreboard records:
-
-| Field        | Example                                | Description                                  |
-| ------------ | -------------------------------------- | -------------------------------------------- |
-| `Version`    | `1.4.6`                                | Version of the compute client                |
-| `Strategy`   | `brute-force`                          | Strategy used to find the game               |
-| `InstanceId` | `11111111-2222-3333-4444-555555555555` | Identifier of the compute instance           |
-| `User`       | `oli`                                  | Name the score was submitted under           |
-| `Length`     | `4000`                                 | The score: number of moves before game ended |
-
-Only the 1000 highest-scoring games per player count are retained.
-
-## Getting started
+## Getting Started
 
 ### Prerequisites
-- [.NET 8 SDK](https://dotnet.microsoft.com/download) (to build and run locally)
-- [Docker](https://www.docker.com/) and Docker Compose (to run the full distributed system)
 
-### Build
+- [Docker](https://www.docker.com/) and Docker Compose
 
-```sh
-dotnet build CardGames.BeggarMyNeighbour.sln
-```
-
-### Run the whole system with Docker Compose
+### Run with Docker Compose
 
 ```sh
 docker compose up --build
 ```
 
-This starts RabbitMQ, the scoreboard API, the verifier, the compute worker and the web front end. Once running:
+This starts RabbitMQ, the scoreboard API and web front end, the verifier, and all compute workers. Once healthy:
 
-| Service                | URL                              |
-| ---------------------- | -------------------------------- |
-| Scoreboard web (leaderboard) | http://localhost:8088      |
-| Scoreboard API         | http://localhost:8087/api/scores |
-| RabbitMQ management UI  | http://localhost:15672           |
+| Service | URL |
+|---|---|
+| Scoreboard (leaderboard) | http://localhost:8088 |
+| Scoreboard API | http://localhost:8087/api/scores |
+| RabbitMQ management UI | http://localhost:15672 |
 
-### Run services individually (local development)
+Workers begin submitting scores within seconds. The leaderboard updates automatically.
+
+### Build and run locally (without Docker)
 
 ```sh
-# Scoreboard API (listens on http://localhost:8087)
+dotnet build CardGames.BeggarMyNeighbour.sln
+
+# Scoreboard API
 dotnet run --project src/CardGames.BeggarMyNeighbour.Scoreboard.API
 
-# Web front end (reads the API at http://localhost:8087 in Development)
+# Scoreboard web front end
 dotnet run --project src/CardGames.BeggarMyNeighbour.Scoreboard.Web
 
-# Compute worker
-dotnet run --project src/CardGames.BeggarMyNeighbour.Compute
+# A compute worker
+Algorithm=SimulatedAnnealing dotnet run --project src/CardGames.BeggarMyNeighbour.Compute
 ```
 
-## Configuration
+## Services
 
-### Beggar.Compute (environment variables)
+| Service | Description |
+|---|---|
+| **Compute** | Search workers. Each container runs one algorithm (set by `Algorithm` env var) and submits qualifying games to the scoreboard API. Multiple containers of the same image can run different algorithms simultaneously. |
+| **Scoreboard API** | Receives game submissions, stores the top 1000 results per `(players, strategy)` bucket in SQLite, and queues games for verification via RabbitMQ. |
+| **Scoreboard Web** | Razor Pages leaderboard showing the top games with filtering by strategy, user, and player count. Includes an improvement-over-time chart. |
+| **Verify** | Replays submitted decks to confirm the reported score is accurate before the `IsVerified` flag is set. |
 
-| Variable        | Default                       | Description                                            |
-| --------------- | ----------------------------- | ------------------------------------------------------ |
-| `Algorithm`     | `Best`                        | Which search algorithm to run                          |
-| `BeggarUser`    | _(none)_                      | Name to submit scores under                            |
-| `ScoreboardUrl` | `http://beggar-api.o-os.uk`   | Full URL of the scoreboard's `POST /api/scores` endpoint |
-| `BeggarVersion` | _(assembly version)_          | Version string reported with each score                |
-| `InstanceId`    | _(random GUID per process)_   | Identifier reported with each score                    |
+Full data flow: [architecture](docs/architecture.md).
 
-### Beggar.Scoreboard.API (configuration / environment variables)
+## Algorithms
 
-| Setting                                  | Default                       | Description                          |
-| ---------------------------------------- | ----------------------------- | ------------------------------------ |
-| `ConnectionStrings__ScoreBoardDatabase`  | `Data Source=scoreboard.db;`  | SQLite connection string             |
-| `RabbitMq__HostName`                     | `beggareventbus`              | RabbitMQ host used for verification   |
+Seven search strategies are available, selected per-container via the `Algorithm` environment variable. Each reports scores under a distinct strategy name so results are tracked separately on the scoreboard.
 
-### Beggar.Scoreboard.Web
+| Algorithm | Strategy name | Approach |
+|---|---|---|
+| `BruteForce` | `brute-force` | Random genome each iteration |
+| `SimulatedAnnealing` | `simulated-annealing` | Fixed cooling schedule |
+| `SimulatedAnnealingAdaptive` | `simulated-annealing-adaptive` | Feedback-controlled temperature |
+| `IteratedLocalSearch` | `iterated-local-search` | Perturb best + local hill-climb |
+| `Memetic` | `memetic` | Genetic algorithm + per-individual local search |
+| `TabuSearch` | `tabu-search` | Hill climb with tabu memory |
+| `HillClimb` | `hill-climb` | Greedy hill climb with stagnation restart |
+| `HillClimbParallel` | `hill-climb-parallel` | N parallel hill-climb chains |
+| `Genetic` | `genetic` | Population-based genetic algorithm |
 
-| Setting                  | Default                     | Description                       |
-| ------------------------ | --------------------------- | --------------------------------- |
-| `ScoreboardApi__BaseUrl` | `http://scoreboard.api`     | Base URL of the scoreboard API    |
+All algorithms use a 33-element **structural genome** (16 picture card positions + 17 gap sizes summing to 36) that makes deck evaluation fully deterministic. See [algorithms](docs/algorithms.md) for details on each strategy and how to add a new one.
 
 ## API
 
-| Method | Route         | Description                                              |
-| ------ | ------------- | ------------------------------------------------------- |
-| `GET`  | `/api/scores` | Returns the top 1000 games, highest number of moves first |
-| `POST` | `/api/scores` | Submits a new game; returns the current qualifying score threshold |
+| Method | Route | Description |
+|---|---|---|
+| `POST` | `/api/scores` | Submit a game; returns current qualifying threshold |
+| `GET` | `/api/scores` | Top 1000 games (filtered by `?players=N`) |
+| `GET` | `/api/scores/threshold` | Qualifying threshold for `?players=N&strategy=X` |
+| `GET` | `/api/scores/history` | Downsampled score history for charting |
+| `GET` | `/health` | Health check |
+
+Full request/response schemas: [api reference](docs/api.md).
+
+## Configuration
+
+Key environment variables for the compute worker:
+
+| Variable | Description |
+|---|---|
+| `Algorithm` | Which algorithm to run (see table above) |
+| `BeggarUser` | Name attributed to submitted scores |
+| `BeggarTeam` | Optional team label |
+| `BeggarPlayers` | Number of players (default `4`) |
+| `ScoreboardUrl` | Full URL of the POST `/api/scores` endpoint |
+
+Full configuration reference for all services: [configuration](docs/configuration.md).
 
 ## License
 

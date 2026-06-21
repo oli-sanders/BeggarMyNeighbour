@@ -20,6 +20,31 @@ public class ScoreboardClient
         _httpClientFactory = httpClientFactory;
     }
 
+    public record HistoryPoint(string Strategy, DateTime Submitted, int Length);
+
+    /// <summary>
+    /// Fetch historical scores ordered by submission time for charting progress over time.
+    /// Returns an empty list if the API cannot be reached.
+    /// </summary>
+    public async Task<IReadOnlyList<HistoryPoint>> GetHistoryAsync(
+        int? players = null, int limit = 5000,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = $"api/scores/history?limit={limit}";
+            if (players.HasValue)
+                query += $"&players={players.Value}";
+            var points = await _httpClient.GetFromJsonAsync<List<HistoryPoint>>(query, cancellationToken);
+            return points ?? new List<HistoryPoint>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not load score history from the scoreboard API.");
+            return new List<HistoryPoint>();
+        }
+    }
+
     /// <summary>
     /// Fetch the top games from the scoreboard, highest number of moves first.
     /// Returns an empty list if the API cannot be reached.

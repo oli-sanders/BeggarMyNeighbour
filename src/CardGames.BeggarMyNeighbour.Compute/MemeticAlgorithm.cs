@@ -9,33 +9,48 @@ using Newtonsoft.Json.Linq;
 
 namespace CardGames.BeggarMyNeighbour.Compute
 {
-    public class GeneticAlgorithm : BeggarAlgorithm
+    /// <summary>
+    /// Memetic algorithm: genetic algorithm where every individual undergoes a short
+    /// hill-climb after crossover/mutation before being scored. Population stays near
+    /// local optima, combining the global exploration of genetic search with the precision
+    /// of local refinement.
+    ///
+    /// Compares against GeneticAlgorithm: local refinement per individual should reach
+    /// higher scores faster at the cost of more compute per generation.
+    /// </summary>
+    public class MemeticAlgorithm : BeggarAlgorithm
     {
-        private const int PopulationSize = 100;
-        private const double BaseMutationRate = 0.1;
-        private const double MaxMutationRate = 0.5;
-        private const int StagnationLimit = 50;      // generations before boosting mutation
-        private const int ImmigrationInterval = 100; // generations between scoreboard imports
-        private const int ImmigrantCount = 5;        // individuals replaced per import
+        private const int PopulationSize = 30;
+        private const int LocalSearchSteps = 200;
+        private const double BaseMutationRate = 0.2;
+        private const double MaxMutationRate = 0.6;
+        private const int StagnationLimit = 20;
+        private const int ImmigrationInterval = 50;
+        private const int ImmigrantCount = 5;
 
-public GeneticAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
+        public MemeticAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
             : base(logger, rng, players, user, scoreboardUrl, version, instanceId, team) { }
 
-        public override string Strategy => "genetic";
+        public override string Strategy => "memetic";
 
         protected override void DoRun(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("Genetic algorithm (structural) starting. Population={N}", PopulationSize);
+            Logger.LogInformation("Memetic algorithm starting. Population={N}, LocalSearchSteps={S}", PopulationSize, LocalSearchSteps);
 
-            // Seed initial population with top scoreboard genomes where available.
+            int maxMoves = Math.Max(5000, Threshold * 3);
+
+            // Seed initial population with scoreboard genomes where available.
             var seeds = FetchImmigrants();
-            Logger.LogInformation("Seeding initial population with {N} scoreboard genomes", seeds.Count);
+            Logger.LogInformation("Seeding memetic population with {N} scoreboard genomes", seeds.Count);
             var population = seeds
                 .Take(PopulationSize / 2)
                 .Concat(Enumerable.Range(0, PopulationSize - Math.Min(seeds.Count, PopulationSize / 2))
                     .Select(_ => StructuredDeckUtils.RandomGenome(Rng)))
                 .Take(PopulationSize)
                 .ToList();
+
+            // Locally refine every individual in the initial population.
+            population = population.Select(g => LocalRefine(g, maxMoves, cancellationToken)).ToList();
 
             int generation = 0;
             int bestEver = 0;
@@ -45,11 +60,10 @@ public GeneticAlgorithm(ILogger logger, Random rng, int players, string user, st
             while (!cancellationToken.IsCancellationRequested)
             {
                 IncrementIteration();
-                var maxMoves = Math.Max(5000, Threshold * 3);
-                // Parallel fitness evaluation — deterministic so no per-thread RNG needed.
+                maxMoves = Math.Max(5000, Threshold * 3);
+
                 var scored = population
-                    .AsParallel()
-                    .Select(g => (genome: g, score: StructuredDeckUtils.EvaluateBest(g, Players, maxMoves: maxMoves)))
+                    .Select(g => (genome: g, score: StructuredDeckUtils.EvaluateBest(g, Players, maxMoves)))
                     .OrderByDescending(x => x.score)
                     .ToList();
 
@@ -61,7 +75,6 @@ public GeneticAlgorithm(ILogger logger, Random rng, int players, string user, st
                     SubmitGame(deck, new Game(deck, Players).Play());
                 }
 
-                // Adaptive mutation rate.
                 if (best.score > bestEver)
                 {
                     bestEver = best.score;
@@ -75,52 +88,68 @@ public GeneticAlgorithm(ILogger logger, Random rng, int players, string user, st
                         BaseMutationRate + (double)stagnant / StagnationLimit * (MaxMutationRate - BaseMutationRate));
                 }
 
-                // Island model: occasionally import top decks from the scoreboard.
+                // Occasional immigration from scoreboard.
                 if (generation % ImmigrationInterval == 0)
                 {
                     var immigrants = FetchImmigrants();
                     if (immigrants.Count > 0)
                     {
-                        Logger.LogInformation("Generation {Gen}: importing {N} immigrants from scoreboard", generation, immigrants.Count);
+                        Logger.LogInformation("Generation {Gen}: importing {N} immigrants", generation, immigrants.Count);
                         for (int i = 0; i < Math.Min(immigrants.Count, ImmigrantCount); i++)
-                            scored[scored.Count - 1 - i] = (genome: immigrants[i], score: 0);
+                        {
+                            var refined = LocalRefine(immigrants[i], maxMoves, cancellationToken);
+                            scored[scored.Count - 1 - i] = (genome: refined, score: 0);
+                        }
                     }
                 }
 
                 // Select top half as parents.
                 var parents = scored.Take(PopulationSize / 2).Select(x => x.genome).ToList();
 
-                // Build next generation.
+                // Build next generation: elites kept, rest via crossover + mutation + local refinement.
                 var nextGen = new List<List<int>>(PopulationSize);
 
-                // Elitism: carry over top 10%.
                 foreach (var p in parents.Take(PopulationSize / 10))
                     nextGen.Add(p);
 
-                // Fill the rest with crossover + mutation.
-                while (nextGen.Count < PopulationSize)
+                while (nextGen.Count < PopulationSize && !cancellationToken.IsCancellationRequested)
                 {
                     var p1 = parents[Rng.Next(parents.Count)];
                     var p2 = parents[Rng.Next(parents.Count)];
                     var child = StructuredDeckUtils.Crossover(Rng, p1, p2);
                     if (Rng.NextDouble() < mutationRate)
                         child = StructuredDeckUtils.Mutate(Rng, child);
-                    nextGen.Add(child);
+                    nextGen.Add(LocalRefine(child, maxMoves, cancellationToken));
                 }
 
                 population = nextGen;
                 generation++;
 
                 if (generation % ImmigrationInterval == 0)
-                    Logger.LogInformation("Generation {Gen}, best this cycle: {Score}, mutation rate: {Rate:P0}, stagnant: {Stagnant}",
+                    Logger.LogInformation("Memetic gen {Gen}, best: {Score}, mutation: {Rate:P0}, stagnant: {Stagnant}",
                         generation, best.score, mutationRate, stagnant);
             }
         }
 
-        /// <summary>
-        /// Fetch the top games from the scoreboard and extract their picture-card genomes.
-        /// Falls back to an empty list if the scoreboard is unreachable.
-        /// </summary>
+        private List<int> LocalRefine(List<int> genome, int maxMoves, CancellationToken ct)
+        {
+            var current = genome;
+            int currentScore = StructuredDeckUtils.EvaluateBest(current, Players, maxMoves);
+
+            for (int step = 0; step < LocalSearchSteps && !ct.IsCancellationRequested; step++)
+            {
+                var candidate = StructuredDeckUtils.Mutate(Rng, current);
+                int candidateScore = StructuredDeckUtils.EvaluateBest(candidate, Players, maxMoves);
+                if (candidateScore > currentScore)
+                {
+                    current = candidate;
+                    currentScore = candidateScore;
+                }
+            }
+
+            return current;
+        }
+
         private List<List<int>> FetchImmigrants()
         {
             try

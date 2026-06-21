@@ -80,8 +80,10 @@ namespace CardGames.BeggarMyNeighbour.Verify
                                      autoAck: false,
                                      consumer: consumer);
 
-                Console.WriteLine(" Press [enter] to exit.");
-                Console.ReadLine();
+                var exitEvent = new ManualResetEventSlim(false);
+                Console.CancelKeyPress += (_, e) => { e.Cancel = true; exitEvent.Set(); };
+                AppDomain.CurrentDomain.ProcessExit += (_, _) => exitEvent.Set();
+                exitEvent.Wait();
             }
         }
     }

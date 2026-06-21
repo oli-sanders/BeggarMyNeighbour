@@ -27,16 +27,17 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 {
     /// <summary>
     /// Tracks the cut-off score (number of moves) needed to make the leaderboard.
-    /// Only the top <see cref="ScoreboardSize"/> games per player count are kept.
+    /// Only the top <see cref="ScoreboardSize"/> games per (player count, strategy) are kept.
     /// </summary>
     public class ThresholdData
     {
         /// <summary>
-        /// Number of games to keep on the leaderboard for each player count.
+        /// Number of games to keep on the leaderboard for each (player count, strategy) bucket.
         /// </summary>
         public const int ScoreboardSize = 1000;
 
         public int Players { get; private set; }
+        public string Strategy { get; private set; }
 
         private int _currentthreshold;
 
@@ -44,9 +45,10 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 
         private List<int> _currentList;
 
-        public ThresholdData(List<int> currentlist, int players)
+        public ThresholdData(List<int> currentlist, int players, string strategy)
         {
             Players = players;
+            Strategy = strategy;
             _currentList = currentlist.OrderByDescending(r => r).Take(ScoreboardSize).ToList();
             // Once the board is full the threshold is the lowest qualifying score;
             // until then anything beats the (empty) board.
@@ -81,34 +83,44 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
             using var scope = scopeFactory.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ScoreBoardContext>();
 
-            // Distinct player counts already present in the database.
-            var playerCounts = context.Scores
-                .Select(s => s.Players)
+            // Distinct (player count, strategy) pairs already present in the database.
+            var groups = context.Scores
+                .Select(s => new { s.Players, s.Strategy })
                 .Distinct()
                 .ToList();
 
-            foreach (var numberOfPlayers in playerCounts)
+            foreach (var group in groups)
             {
                 var currentList = context.Scores
-                    .Where(p => p.Players == numberOfPlayers)
+                    .Where(p => p.Players == group.Players && p.Strategy == group.Strategy)
                     .OrderByDescending(r => r.Length)
                     .Take(ThresholdData.ScoreboardSize)
                     .Select(r => r.Length)
                     .ToList();
 
-                _thresholds.Add(new ThresholdData(currentList, numberOfPlayers));
+                _thresholds.Add(new ThresholdData(currentList, group.Players, group.Strategy));
             }
         }
 
-        public int UpdateThreshold(int length, int players)
+        public int GetThreshold(int players, string strategy)
+        {
+            lock (_thresholds)
+            {
+                return _thresholds
+                    .FirstOrDefault(t => t.Players == players && t.Strategy == strategy)
+                    ?.Threshold ?? 0;
+            }
+        }
+
+        public int UpdateThreshold(int length, int players, string strategy)
         {
             ThresholdData current;
             lock (_thresholds)
             {
-                current = _thresholds.FirstOrDefault(t => t.Players == players);
+                current = _thresholds.FirstOrDefault(t => t.Players == players && t.Strategy == strategy);
                 if (current == null)
                 {
-                    current = new ThresholdData(new List<int> { length }, players);
+                    current = new ThresholdData(new List<int> { length }, players, strategy);
                     _thresholds.Add(current);
                     return current.Threshold;
                 }
