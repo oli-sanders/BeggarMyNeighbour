@@ -16,7 +16,6 @@ A genome is a list of **33 integers**:
 - **Positions 16–32** (`g`): 17 gap sizes — the number of number cards (value 0) placed *before* each picture card and *after* the last one. The 17 gaps always sum to exactly 36 (the 36 non-picture cards).
 
 `BuildDeck(genome)` is fully deterministic: the same genome always produces the same 52-card deck. This means:
-- No multi-trial averaging is needed — one evaluation per genome is sufficient.
 - Found decks can be exactly reproduced from their genome.
 - Genetic crossover and mutation operators work on a fixed-size structured representation.
 
