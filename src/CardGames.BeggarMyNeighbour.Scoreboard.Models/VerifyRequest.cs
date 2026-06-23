@@ -25,7 +25,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
     public class VerifyRequest
     {
         public int id { get; set; }
-        public int Lenght { get; set; }
+        public int Length { get; set; }
         public List<int> Deck { get; set; }
         public int Players { get; set; }
     }

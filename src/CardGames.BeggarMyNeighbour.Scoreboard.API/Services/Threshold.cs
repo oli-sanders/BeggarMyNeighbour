@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017 Oliver Sanders
+/* Copyright (c) 2017 Oliver Sanders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -18,17 +18,26 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 {
+    /// <summary>
+    /// Tracks the cut-off score (number of moves) needed to make the leaderboard.
+    /// Only the top <see cref="ScoreboardSize"/> games per (player count, strategy) are kept.
+    /// </summary>
     public class ThresholdData
     {
+        /// <summary>
+        /// Number of games to keep on the leaderboard for each (player count, strategy) bucket.
+        /// </summary>
+        public const int ScoreboardSize = 1000;
+
         public int Players { get; private set; }
+        public string Strategy { get; private set; }
 
         private int _currentthreshold;
 
@@ -36,68 +45,88 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 
         private List<int> _currentList;
 
-        public ThresholdData(List<int> currentlist, int players)
+        public ThresholdData(List<int> currentlist, int players, string strategy)
         {
             Players = players;
-            _currentList = currentlist;
-            _currentthreshold = _currentList.LastOrDefault();
+            Strategy = strategy;
+            _currentList = currentlist.OrderByDescending(r => r).Take(ScoreboardSize).ToList();
+            // Once the board is full the threshold is the lowest qualifying score;
+            // until then anything beats the (empty) board.
+            _currentthreshold = _currentList.Count >= ScoreboardSize ? _currentList.Last() : 0;
         }
 
         public int UpdateThreshold(int length)
         {
-            int current = _currentthreshold;
-            if (current < length)
+            lock (_currentList)
             {
-                _currentList.Add(length);
-                _currentList = _currentList.OrderByDescending(r => r).Take(10).ToList();
-                current = _currentList.LastOrDefault();
+                if (length > _currentthreshold || _currentList.Count < ScoreboardSize)
+                {
+                    _currentList.Add(length);
+                    _currentList = _currentList.OrderByDescending(r => r).Take(ScoreboardSize).ToList();
+                }
+
+                var current = _currentList.Count >= ScoreboardSize ? _currentList.Last() : 0;
                 Interlocked.Exchange(ref _currentthreshold, current);
+                return current;
             }
-            return current;
         }
     }
 
     public class ThresholdService
     {
-        private ScoreBoardContext _context;
+        private readonly List<ThresholdData> _thresholds;
 
-        public ThresholdService(ScoreBoardContext context)
+        public ThresholdService(IServiceScopeFactory scopeFactory)
         {
-            _context = context;
-
             _thresholds = new List<ThresholdData>();
 
-            //get number of players
-            var q = (from a in _context.Scores
-                     group a by a.Players into playergroups
-                     select playergroups.Key).ToList();
+            using var scope = scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ScoreBoardContext>();
 
-            //setup thresholds
-            foreach (var numberofplayers in q)
+            // Distinct (player count, strategy) pairs already present in the database.
+            var groups = context.Scores
+                .Select(s => new { s.Players, s.Strategy })
+                .Distinct()
+                .ToList();
+
+            foreach (var group in groups)
             {
-                var currentlist = _context.Scores.Where(p => p.Players == numberofplayers).OrderByDescending(r => r.Lenght).Take(10).Select(r => r.Lenght).ToList();
-                var current = new ThresholdData(currentlist, numberofplayers);
-                _thresholds.Add(current);
+                var currentList = context.Scores
+                    .Where(p => p.Players == group.Players && p.Strategy == group.Strategy)
+                    .OrderByDescending(r => r.Length)
+                    .Take(ThresholdData.ScoreboardSize)
+                    .Select(r => r.Length)
+                    .ToList();
+
+                _thresholds.Add(new ThresholdData(currentList, group.Players, group.Strategy));
             }
         }
 
-        private List<ThresholdData> _thresholds;
-
-        public int UpdateThreshold(int lenght, int players)
+        public int GetThreshold(int players, string strategy)
         {
-            var current = _thresholds.Where(t => t.Players == players).FirstOrDefault();
-            
-            if(current != null)
+            lock (_thresholds)
             {
-               return current.UpdateThreshold(lenght);
+                return _thresholds
+                    .FirstOrDefault(t => t.Players == players && t.Strategy == strategy)
+                    ?.Threshold ?? 0;
             }
-            else
+        }
+
+        public int UpdateThreshold(int length, int players, string strategy)
+        {
+            ThresholdData current;
+            lock (_thresholds)
             {
-                var newList = new List<int> { lenght };
-                var newThreshold = new ThresholdData(newList, players);
-                _thresholds.Add(newThreshold);
-                return lenght;
+                current = _thresholds.FirstOrDefault(t => t.Players == players && t.Strategy == strategy);
+                if (current == null)
+                {
+                    current = new ThresholdData(new List<int> { length }, players, strategy);
+                    _thresholds.Add(current);
+                    return current.Threshold;
+                }
             }
-         }
+
+            return current.UpdateThreshold(length);
+        }
     }
 }

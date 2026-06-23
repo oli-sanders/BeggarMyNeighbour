@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017 Oliver Sanders
+/* Copyright (c) 2017 Oliver Sanders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,65 +19,78 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using CardGames.BeggarMyNeighbour.Scoreboard.Models;
-using System.Text;
 
 namespace CardGames.BeggarMyNeighbour.Scoreboard.API.Services
 {
-    public interface IVerifyService{}
+    public interface IVerifyService { }
 
-    public class VerifyService:IVerifyService
+    public class VerifyService : IVerifyService
     {
-        private IConnectionFactory _factory;
+        private readonly IConnectionFactory _factory;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<VerifyService> _logger;
         private IConnection _connection;
         private IModel _channel;
         private EventingBasicConsumer _consumer;
-        private ScoreBoardContext _context;
 
-        public VerifyService(IConnectionFactory factory, ScoreBoardContext context)
+        public VerifyService(IConnectionFactory factory, IServiceScopeFactory scopeFactory, ILogger<VerifyService> logger)
         {
-            _factory = factory;            
-            _context = context;
-            _connection = _factory.CreateConnection();
-            _connection.ConnectionShutdown += _connection_ConnectionShutdown;
-            _channel = _connection.CreateModel();
-            _channel.QueueDeclare(queue: "verify_response_queue", durable: true, exclusive: false, autoDelete: false, arguments: null);
-            _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+            _factory = factory;
+            _scopeFactory = scopeFactory;
+            _logger = logger;
 
-            _consumer = new  EventingBasicConsumer(_channel);
-            _consumer.Received += _consumer_Received;
-            
-            _channel.BasicConsume(queue: "verify_response_queue", noAck: true, consumer: _consumer);
+            try
+            {
+                _connection = _factory.CreateConnection();
+                _connection.ConnectionShutdown += ConnectionShutdown;
+                _channel = _connection.CreateModel();
+                _channel.QueueDeclare(queue: "verify_response_queue", durable: true, exclusive: false, autoDelete: false, arguments: null);
+                _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+
+                _consumer = new EventingBasicConsumer(_channel);
+                _consumer.Received += ConsumerReceived;
+
+                _channel.BasicConsume(queue: "verify_response_queue", autoAck: false, consumer: _consumer);
+            }
+            catch (Exception ex)
+            {
+                // The API should still start (and accept scores) even if the
+                // message bus is not yet available - verification simply waits.
+                _logger.LogWarning(ex, "Could not connect to the message bus; verification is disabled.");
+            }
         }
 
-        private void _connection_ConnectionShutdown(object sender, ShutdownEventArgs e)
+        private void ConnectionShutdown(object sender, ShutdownEventArgs e)
         {
-            Console.WriteLine(e.ReplyText);
+            _logger.LogWarning("Verify bus connection shut down: {Reason}", e.ReplyText);
         }
 
-        private void _consumer_Received(object sender, BasicDeliverEventArgs ea)
+        private void ConsumerReceived(object sender, BasicDeliverEventArgs ea)
         {
-            var body = ea.Body;
-            var message = Encoding.UTF8.GetString(body);
-            
-            // Display message
-            Console.WriteLine(" [x] Received {0}", message);
+            var message = Encoding.UTF8.GetString(ea.Body.ToArray());
+            _logger.LogInformation("Received verification result {Message}", message);
 
             var response = Newtonsoft.Json.JsonConvert.DeserializeObject<VerifyResponse>(message);
 
-            if(response.success)
+            if (response.success)
             {
-                var score = _context.Scores.Find(response.id);
-                score.Verified = response.Verified;
-                _context.SaveChanges();
+                using var scope = _scopeFactory.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<ScoreBoardContext>();
+                var score = context.Scores.Find(response.id);
+                if (score != null)
+                {
+                    score.Verified = response.Verified;
+                    context.SaveChanges();
+                }
             }
 
-            Console.WriteLine($" [x] received verification {response.id}. The game was verified : {response.success}");
+            _logger.LogInformation("Verification for {Id} complete; verified: {Success}", response.id, response.success);
 
             _channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
         }

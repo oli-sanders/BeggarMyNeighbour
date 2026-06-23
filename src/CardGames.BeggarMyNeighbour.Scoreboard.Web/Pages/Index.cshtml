@@ -1,0 +1,200 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Leaderboard";
+}
+<script>setTimeout(function(){ location.reload(); }, 30000);</script>
+
+<h1 class="display-5 mb-3">Beggar My Neighbour — Longest Games</h1>
+<p class="text-muted">
+    The top games found so far, ranked by the number of moves (cards played) before the game ended.
+    @if (Model.VerifyQueueDepth.HasValue)
+    {
+        <span class="badge bg-info text-dark ms-2">@Model.VerifyQueueDepth pending verification</span>
+    }
+</p>
+
+@if (Model.StrategySummaries.Count > 0)
+{
+    <div class="mb-4">
+        <h5 class="text-muted">Strategy comparison</h5>
+        <table class="table table-sm table-bordered w-auto">
+            <thead class="table-light">
+                <tr>
+                    <th>Strategy</th>
+                    <th>Best score</th>
+                    <th>Games submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model.StrategySummaries)
+                {
+                    <tr>
+                        <td>@s.Strategy</td>
+                        <td><strong>@s.BestScore</strong></td>
+                        <td>@s.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-auto">
+        <label class="form-label" for="User">User</label>
+        <input class="form-control" type="text" id="User" name="user" value="@Model.UserName" placeholder="any user" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="Strategy">Strategy</label>
+        <select class="form-select" id="Strategy" name="Strategy">
+            <option value="">any strategy</option>
+            @foreach (var strategy in Model.Strategies)
+            {
+                if (strategy == Model.Strategy)
+                {
+                    <option value="@strategy" selected>@strategy</option>
+                }
+                else
+                {
+                    <option value="@strategy">@strategy</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="Players">Players</label>
+        <select class="form-select" id="Players" name="Players">
+            <option value="">any</option>
+            @foreach (var count in Model.PlayerCounts)
+            {
+                if (Model.Players == count)
+                {
+                    <option value="@count" selected>@count</option>
+                }
+                else
+                {
+                    <option value="@count">@count</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="Team">Team</label>
+        <select class="form-select" id="Team" name="Team">
+            <option value="">any team</option>
+            @foreach (var team in Model.Teams)
+            {
+                if (team == Model.Team)
+                {
+                    <option value="@team" selected>@team</option>
+                }
+                else
+                {
+                    <option value="@team">@team</option>
+                }
+            }
+        </select>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" type="submit">Filter</button>
+        <a class="btn btn-outline-secondary" href="/">Reset</a>
+    </div>
+</form>
+
+@if (Model.ChartDataJson != "[]")
+{
+    <div class="mb-4">
+        <h5 class="text-muted">Score history by strategy</h5>
+        <canvas id="scoreChart" height="100"></canvas>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script>
+    (function () {
+        var palette = {
+            "brute-force":         "rgba( 59,130,246,0.7)",
+            "hill-climb":          "rgba( 34,197, 94,0.7)",
+            "simulated-annealing": "rgba(249,115, 22,0.7)",
+            "genetic":             "rgba(239, 68, 68,0.7)",
+            "unknown":             "rgba(148,163,184,0.7)"
+        };
+        var raw = @Html.Raw(Model.ChartDataJson);
+        var grouped = {};
+        raw.forEach(function(p) {
+            var s = p.strategy || "unknown";
+            if (!grouped[s]) grouped[s] = [];
+            grouped[s].push({ x: p.x, y: p.y });
+        });
+        var datasets = Object.keys(grouped).map(function(s) {
+            var color = palette[s] || "rgba(100,100,100,0.7)";
+            return { label: s, data: grouped[s], backgroundColor: color, pointRadius: 3 };
+        });
+        new Chart(document.getElementById("scoreChart"), {
+            type: "scatter",
+            data: { datasets: datasets },
+            options: {
+                scales: {
+                    x: { type: "time", time: { unit: "minute" }, title: { display: true, text: "Submitted" } },
+                    y: { title: { display: true, text: "Moves" } }
+                },
+                plugins: { legend: { position: "top" } }
+            }
+        });
+    })();
+    </script>
+}
+
+@if (Model.Scores.Count == 0)
+{
+    <div class="alert alert-info">
+        No scores to show yet. Make sure the Scoreboard API is reachable and that the Compute service has submitted some games.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Score (moves)</th>
+                <th scope="col">User</th>
+                <th scope="col">Team</th>
+                <th scope="col">Strategy</th>
+                <th scope="col">Iteration</th>
+                <th scope="col">Players</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Verified</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                var rank = 1;
+            }
+            @foreach (var score in Model.Scores)
+            {
+                <tr>
+                    <td>@rank</td>
+                    <td><strong>@score.Length</strong></td>
+                    <td>@score.User</td>
+                    <td>@(score.Team ?? "—")</td>
+                    <td>@score.Strategy</td>
+                    <td>@(score.Iteration.HasValue ? score.Iteration.Value.ToString("N0") : "—")</td>
+                    <td>@score.Players</td>
+                    <td><span title="@score.Submitted.ToString("o")">@score.Submitted.ToString("yyyy-MM-dd HH:mm:ss")</span></td>
+                    <td>
+                        @if (score.IsVerified)
+                        {
+                            <span class="badge bg-success">verified</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">unverified</span>
+                        }
+                    </td>
+                </tr>
+                rank++;
+            }
+        </tbody>
+    </table>
+}

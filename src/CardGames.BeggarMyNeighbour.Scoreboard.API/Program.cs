@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017 Oliver Sanders
+/* Copyright (c) 2017 Oliver Sanders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,42 +19,82 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using CardGames.BeggarMyNeighbour.Scoreboard.API;
 using CardGames.BeggarMyNeighbour.Scoreboard.API.Services;
 using RabbitMQ.Client;
 
-namespace CardGames.BeggarMyNeighbour.Scoreboard.API
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+
+var conn = builder.Configuration.GetConnectionString("ScoreBoardDatabase");
+builder.Services.AddDbContextPool<ScoreBoardContext>(options => options.UseSqlite(conn));
+
+builder.Services.AddSingleton<ThresholdService>();
+builder.Services.AddSingleton<IConnectionFactory>(new ConnectionFactory
 {
-    public class Program
+    HostName = builder.Configuration["RabbitMq:HostName"] ?? "beggareventbus",
+    AutomaticRecoveryEnabled = true
+});
+builder.Services.AddSingleton<IVerifyService, VerifyService>();
+
+builder.Services.AddHttpClient("upstream", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+builder.Services.AddSingleton<UpstreamScoreboardService>();
+
+// Allow the web front end (and any other origin) to read the scoreboard.
+builder.Services.AddCors(options =>
+    options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+
+// Limit score submissions to 30 per 10 seconds to guard against runaway workers.
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("post-scores", o =>
     {
-       // private static VerifyService verifyservice;
+        o.Window = TimeSpan.FromSeconds(10);
+        o.PermitLimit = 30;
+        o.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        o.QueueLimit = 5;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
-        public static void Main(string[] args)
-        {
-            
+builder.Services.AddHealthChecks();
 
-            var host = new WebHostBuilder()
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .ConfigureLogging(factory =>
-                {
-                    factory.AddConsole();
-                    factory.AddDebug();
-                })
-                .UseApplicationInsights()
-                .Build();
+var app = builder.Build();
 
-        //    verifyservice = new VerifyService(host.Services.GetService<IConnectionFactory>(), host.Services.GetService<ScoreBoardContext>());
-
-            host.Run();
-        }
-    }
+// Ensure the database schema is up to date.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ScoreBoardContext>();
+    db.Database.Migrate();
 }
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.All,
+    RequireHeaderSymmetry = false,
+    ForwardLimit = 2
+});
+
+app.UseCors();
+app.UseRateLimiter();
+
+app.MapHealthChecks("/health");
+app.MapControllers();
+
+// Eagerly start the verification listener so verify responses are processed.
+app.Services.GetService<IVerifyService>();
+
+app.Run();

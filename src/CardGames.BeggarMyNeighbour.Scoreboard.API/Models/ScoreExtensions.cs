@@ -32,7 +32,7 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
             {
                 id = score.id,
                 Deck = Newtonsoft.Json.JsonConvert.DeserializeObject<List<int>>(score.Deck),
-                Lenght = score.Lenght,
+                Length = score.Length,
                 Players = score.Players
             };
         }
@@ -44,8 +44,13 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
                 User = String.IsNullOrEmpty(request.User) ? "anon e mouse" : request.User,
                 Submitted = DateTime.UtcNow,
                 Deck = Newtonsoft.Json.JsonConvert.SerializeObject(request.Deck),
-                Lenght = request.Lenght,
-                Players = request.Players
+                Length = request.Length,
+                Players = request.Players,
+                Version = request.Version,
+                Strategy = String.IsNullOrEmpty(request.Strategy) ? "unknown" : request.Strategy,
+                InstanceId = request.InstanceId,
+                Team = request.Team,
+                Iteration = request.Iteration
             };
             return score;
         }
@@ -55,10 +60,16 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.API
             var scoreResponse = new ScoreResponse
             {
                 User = value.User,
-                Lenght = value.Lenght,
+                Length = value.Length,
                 Deck = Newtonsoft.Json.JsonConvert.DeserializeObject<List<int>>(value.Deck),
+                Submitted = value.Submitted,
                 IsVerified = (value.Verified != null),
-                Players = value.Players                
+                Players = value.Players,
+                Version = value.Version,
+                Strategy = value.Strategy,
+                InstanceId = value.InstanceId,
+                Team = value.Team,
+                Iteration = value.Iteration
             };
             return scoreResponse;
         }

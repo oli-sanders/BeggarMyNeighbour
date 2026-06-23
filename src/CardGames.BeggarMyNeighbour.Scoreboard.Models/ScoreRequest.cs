@@ -25,8 +25,38 @@ namespace CardGames.BeggarMyNeighbour.Scoreboard.Models
     public class ScoreRequest
     {
         public string User { get; set; }
-        public int Lenght { get; set; }
+
+        /// <summary>
+        /// The score for the game: the number of moves (cards played) before it ended.
+        /// </summary>
+        public int Length { get; set; }
+
         public List<int> Deck { get; set; }
         public int Players { get; set; }
+
+        /// <summary>
+        /// Version of the compute client that found this game (e.g. "1.4.6").
+        /// </summary>
+        public string Version { get; set; }
+
+        /// <summary>
+        /// Name of the strategy used to find this game (e.g. "brute-force").
+        /// </summary>
+        public string Strategy { get; set; }
+
+        /// <summary>
+        /// Identifier of the compute instance that found this game.
+        /// </summary>
+        public string InstanceId { get; set; }
+
+        /// <summary>
+        /// Team name the score was submitted under (e.g. "uni-lab").
+        /// </summary>
+        public string Team { get; set; }
+
+        /// <summary>
+        /// Number of algorithm iterations completed before this game was found.
+        /// </summary>
+        public long? Iteration { get; set; }
     }
 }

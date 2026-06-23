@@ -1,24 +1,169 @@
-version: '3'
+x-compute-base: &compute-base
+  image: beggar-compute
+  build:
+    context: ./src
+    dockerfile: CardGames.BeggarMyNeighbour.Compute/Dockerfile
+  depends_on:
+    scoreboard.api:
+      condition: service_healthy
 
 services:
-  scoreboard.api:
-    image: scoreboard.api
-    build:
-      context: ./src/CardGames.BeggarMyNeighbour.Scoreboard.API
-      dockerfile: Dockerfile
-    links:
-      - beggareventbus
-    ports:
-     - "8087:80"
   beggareventbus:
-    image: rabbitmq:3.6.10-management
+    image: rabbitmq:3-management
     ports:
-     - "8080:15672"
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  scoreboard.api:
+    image: beggar-scoreboard-api
+    build:
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Scoreboard.API/Dockerfile
+    depends_on:
+      beggareventbus:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__ScoreBoardDatabase=Data Source=/data/scoreboard.db
+      - RabbitMq__HostName=beggareventbus
+      # Set SkipVerification=true to accept scores without replaying them through Beggar.Verify:
+      # - SkipVerification=true
+      # Set UpstreamScoreboard__Url to forward qualifying scores to a parent scoreboard:
+      # - UpstreamScoreboard__Url=https://parent-scoreboard.example.com/api/scores
+    volumes:
+      - beggar-data:/data
+    ports:
+      - "8087:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  scoreboard.web:
+    image: beggar-scoreboard-web
+    build:
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Scoreboard.Web/Dockerfile
+    depends_on:
+      scoreboard.api:
+        condition: service_healthy
+    environment:
+      - ScoreboardApi__BaseUrl=http://scoreboard.api:8080
+    ports:
+      - "8088:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   beggarverify:
-    image: beggarverify
+    image: beggar-verify
     build:
-      context: ./src/CardGames.BeggarMyNeighbour.Verify
-      dockerfile: Dockerfile
-    links:
-     - beggareventbus
+      context: ./src
+      dockerfile: CardGames.BeggarMyNeighbour.Verify/Dockerfile
+    depends_on:
+      beggareventbus:
+        condition: service_healthy
+    environment:
+      - RabbitMqHostName=beggareventbus
+
+  # --- Original algorithms ---
+
+  beggarcompute-bruteforce:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=BruteForce
+
+  beggarcompute-annealing:
+    <<: *compute-base
+    scale: 1
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=SimulatedAnnealing
+
+  # --- Improved variants for comparison ---
+
+  beggarcompute-ils:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=IteratedLocalSearch
+
+  beggarcompute-annealing-adaptive:
+    <<: *compute-base
+    scale: 1
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=SimulatedAnnealingAdaptive
+
+  beggarcompute-memetic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=Memetic
+
+  beggarcompute-tabu:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=TabuSearch
+
+  # --- Heuristic variants (domain-informed mutations from pattern analysis) ---
+
+  beggarcompute-ils-heuristic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=IteratedLocalSearchHeuristic
+
+  beggarcompute-annealing-heuristic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=SimulatedAnnealingHeuristic
+
+  beggarcompute-memetic-heuristic:
+    <<: *compute-base
+    environment:
+      - ScoreboardUrl=http://scoreboard.api:8080/api/scores
+      - BeggarUser=anon
+      - BeggarTeam=local
+      - BeggarPlayers=4
+      - Algorithm=MemeticHeuristic
+
+volumes:
+  beggar-data:

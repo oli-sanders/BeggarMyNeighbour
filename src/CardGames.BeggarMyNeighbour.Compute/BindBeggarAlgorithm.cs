@@ -20,6 +20,7 @@ SOFTWARE.
 */
 using System;
 using System.Linq;
+using System.Threading;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 
@@ -27,24 +28,25 @@ namespace CardGames.BeggarMyNeighbour.Compute
 {
     public class BindBeggarAlgorithm : BeggarAlgorithm
     {
-       public BindBeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl) : base(logger, rng, players, user, scoreboardUrl){}
+       public BindBeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
+           : base(logger, rng, players, user, scoreboardUrl, version, instanceId, team) { }
 
-       public void Run()
+       public override string Strategy => "brute-force";
+
+       protected override void DoRun(CancellationToken cancellationToken)
         {
-            Logger.LogInformation("I'm Running");
+            Logger.LogInformation("Brute-force (structural) starting");
 
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var shuffleddeck = CardUtils.Shuffle(Rng, CardUtils.Deck);
-                var ndgame = new Game(shuffleddeck.ToList(), Players);
+                IncrementIteration();
+                var maxMoves = Math.Max(5000, Threshold * 3);
+                var genome = StructuredDeckUtils.RandomGenome(Rng);
+                var deck = StructuredDeckUtils.BuildDeck(genome);
+                var result = new Game(deck, Players).Play(maxMoves);
 
-                var result = ndgame.Play();
-
-                //record long games
                 if (result > Threshold)
-                {
-                    SubmitGame(shuffleddeck, result);
-                }
+                    SubmitGame(deck, result);
             }
         }
     }

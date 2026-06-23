@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2017 Oliver Sanders
+/* Copyright (c) 2017 Oliver Sanders
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,6 +19,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 using System;
+using System.Reflection;
+using System.Threading;
 using Microsoft.Extensions.Logging;
 
 namespace CardGames.BeggarMyNeighbour.Compute
@@ -38,21 +40,74 @@ namespace CardGames.BeggarMyNeighbour.Compute
             var user = Environment.GetEnvironmentVariable("BeggarUser");
             var url = Environment.GetEnvironmentVariable("ScoreboardUrl") ?? "http://beggar-api.o-os.uk";
 
-            ILoggerFactory loggerFactory = new LoggerFactory();
+            // Version reported to the scoreboard (e.g. "1.4.6"). Falls back to the assembly version.
+            var version = Environment.GetEnvironmentVariable("BeggarVersion")
+                ?? Assembly.GetExecutingAssembly().GetName().Version?.ToString()
+                ?? "0.0.0";
 
-            loggerFactory
-                .AddConsole()
-                .AddDebug();
+            // A stable id for this running compute instance, reported with every game.
+            var instanceId = Environment.GetEnvironmentVariable("InstanceId") ?? Guid.NewGuid().ToString();
+            var team = Environment.GetEnvironmentVariable("BeggarTeam");
+            var players = int.TryParse(Environment.GetEnvironmentVariable("BeggarPlayers"), out var p) ? p : 4;
 
-            var players = 4;
-            
-            switch(algorithm)
+            using var loggerFactory = LoggerFactory.Create(builder =>
             {
+                builder.AddConsole();
+                builder.AddDebug();
+            });
+
+            var logger = loggerFactory.CreateLogger("Compute");
+            logger.LogInformation("Compute starting. Version {Version}, Instance {InstanceId}, User {User}, Team {Team}, Players {Players}", version, instanceId, user, team, players);
+
+            // Allow graceful shutdown on SIGTERM / Ctrl-C.
+            using var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => cts.Cancel();
+
+            var rng = new Random();
+            switch (algorithm)
+            {
+                case "HillClimb":
+                    new HillClimbAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "HillClimbParallel":
+                    new HillClimbParallelAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "IteratedLocalSearch":
+                    new IteratedLocalSearchAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "SimulatedAnnealing":
+                    new SimulatedAnnealingAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "SimulatedAnnealingAdaptive":
+                    new SimulatedAnnealingAdaptiveAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "Genetic":
+                    new GeneticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "Memetic":
+                    new MemeticAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "TabuSearch":
+                    new TabuSearchAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "IteratedLocalSearchHeuristic":
+                    new IteratedLocalSearchHeuristicAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "SimulatedAnnealingHeuristic":
+                    new SimulatedAnnealingHeuristicAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "MemeticHeuristic":
+                    new MemeticHeuristicAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
+                    break;
+                case "BruteForce":
                 case "Best":
-                    var compute = new BindBeggarAlgorithm(loggerFactory.CreateLogger("Compute"),new Random() ,players, user, url);
-                    compute.Run();
+                default:
+                    new BindBeggarAlgorithm(logger, rng, players, user, url, version, instanceId, team).Run(cts.Token);
                     break;
             }
+
+            logger.LogInformation("Compute shut down gracefully.");
         }
     }
 }

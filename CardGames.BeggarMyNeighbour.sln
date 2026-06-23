@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CardGames.BeggarMyNeighbour.Scoreboard.Models", "src\CardGames.BeggarMyNeighbour.Scoreboard.Models\CardGames.BeggarMyNeighbour.Scoreboard.Models.csproj", "{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E12B867C-B2CB-4815-B83C-98D4ACF16591}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CardGames.BeggarMyNeighbour.Scoreboard.Web", "src\CardGames.BeggarMyNeighbour.Scoreboard.Web\CardGames.BeggarMyNeighbour.Scoreboard.Web.csproj", "{8C692D88-74DA-4671-9779-7D0D1D6D3AC4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,10 @@ Global
 		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E41FE485-3E3F-42BA-9C7D-B0A2B1B359D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C692D88-74DA-4671-9779-7D0D1D6D3AC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C692D88-74DA-4671-9779-7D0D1D6D3AC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C692D88-74DA-4671-9779-7D0D1D6D3AC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C692D88-74DA-4671-9779-7D0D1D6D3AC4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,5 +62,8 @@ Global
 	EndGlobalSection
 	GlobalSection(Performance) = preSolution
 		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8C692D88-74DA-4671-9779-7D0D1D6D3AC4} = {E12B867C-B2CB-4815-B83C-98D4ACF16591}
 	EndGlobalSection
 EndGlobal

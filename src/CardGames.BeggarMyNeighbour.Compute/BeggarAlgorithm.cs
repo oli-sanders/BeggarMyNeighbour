@@ -20,6 +20,7 @@ SOFTWARE.
 */
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using CardGames.BeggarMyNeighbour;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
@@ -58,7 +59,10 @@ namespace CardGames.BeggarMyNeighbour.Compute
         /// <remarks>
         /// set default to 2000 wil be replaced on first submission.
         /// </remarks>
-        private int _threshold = 2000;
+        private volatile int _threshold = 2000;
+        private int _bestSubmitted = 0;
+        private long _iteration = 0;
+        private readonly object _submitLock = new object();
 
         /// <summary>
         /// store username to submit scores as
@@ -70,35 +74,124 @@ namespace CardGames.BeggarMyNeighbour.Compute
         /// </summary>
         private string _scoreboardurl;
 
-        public BeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl)
+        /// <summary>
+        /// Version of this compute client (e.g. "1.4.6").
+        /// </summary>
+        private string _version;
+
+        /// <summary>
+        /// Identifier unique to this running compute instance.
+        /// </summary>
+        private string _instanceId;
+
+        private string _team;
+
+        public BeggarAlgorithm(ILogger logger, Random rng, int players, string user, string scoreboardUrl, string version, string instanceId, string team = null)
         {
             _logger = logger;
             _players = players;
             _rng = rng;
             _user = user;
             _scoreboardurl = scoreboardUrl;
+            _version = version;
+            _instanceId = instanceId;
+            _team = team;
         }
 
         /// <summary>
-        /// Expose logger to derived 
+        /// Name of the strategy this algorithm uses (e.g. "brute-force").
+        /// </summary>
+        public abstract string Strategy { get; }
+
+        /// <summary>
+        /// Fetches the current threshold from the scoreboard for this algorithm's
+        /// (players, strategy) bucket and updates the local threshold accordingly.
+        /// Falls back to the existing value if the scoreboard is unreachable.
+        /// </summary>
+        private void FetchThreshold()
+        {
+            try
+            {
+                var thresholdUrl = $"{_scoreboardurl}/threshold?players={_players}&strategy={Uri.EscapeDataString(Strategy)}";
+                using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+                var result = client.GetStringAsync(thresholdUrl).Result;
+                if (int.TryParse(result, out var t))
+                {
+                    _threshold = t;
+                    _logger.LogInformation("Fetched initial threshold for {Strategy}/{Players}p: {Threshold}", Strategy, _players, t);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not fetch threshold for {Strategy}/{Players}p, using default {Default}", Strategy, _players, _threshold);
+            }
+        }
+
+        public void Run(CancellationToken cancellationToken = default)
+        {
+            FetchThreshold();
+            DoRun(cancellationToken);
+        }
+
+        protected abstract void DoRun(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Expose logger to derived
         /// </summary>
         public ILogger Logger => _logger;
 
         public Random Rng => _rng;
 
+        /// <summary>
+        /// Override in subclasses to swap in a different mutation operator (e.g. heuristic).
+        /// The <paramref name="rng"/> parameter is passed explicitly so parallel algorithms
+        /// can supply thread-local instances.
+        /// </summary>
+        protected virtual List<int> ApplyMutation(Random rng, List<int> genome) =>
+            StructuredDeckUtils.Mutate(rng, genome);
+
         public int Players => _players;
 
         public int Threshold => _threshold;
+        public int BestSubmitted => _bestSubmitted;
+
+        public long Iteration => _iteration;
+
+        public void IncrementIteration() => Interlocked.Increment(ref _iteration);
 
         public string User => _user;
 
-        public void SubmitGame(List<int> deck, int lenght)
-        {
-            var mresult = new GameResult() { User = User, Lenght = lenght, Deck = deck, Players = Players };
-            var output = Newtonsoft.Json.JsonConvert.SerializeObject(mresult);
-            Logger.LogInformation("found game of lenght {0} : {1}", lenght, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
-            var t = HttpSendResult(mresult, _scoreboardurl);
+        public string Version => _version;
 
+        public string InstanceId => _instanceId;
+
+        public string ScoreboardUrl => _scoreboardurl;
+
+        public string Team => _team;
+
+        public void SubmitGame(List<int> deck, int length)
+        {
+            lock (_submitLock)
+            {
+                if (length <= _bestSubmitted)
+                    return;
+                _bestSubmitted = length;
+            }
+
+            var mresult = new GameResult()
+            {
+                User = User,
+                Length = length,
+                Deck = deck,
+                Players = Players,
+                Version = Version,
+                Strategy = Strategy,
+                InstanceId = InstanceId,
+                Team = Team,
+                Iteration = Interlocked.Read(ref _iteration)
+            };
+            Logger.LogInformation("found game of length {0} : {1}", length, Newtonsoft.Json.JsonConvert.SerializeObject(deck));
+            var t = HttpSendResult(mresult, _scoreboardurl);
             _threshold = t;
         }
 
@@ -111,7 +204,7 @@ namespace CardGames.BeggarMyNeighbour.Compute
 
             if (pollyresult.Outcome == OutcomeType.Failure)
             {
-                return result.Lenght;
+                return result.Length;
             }
 
             return pollyresult.Result;

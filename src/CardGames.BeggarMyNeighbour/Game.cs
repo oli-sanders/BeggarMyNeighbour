@@ -42,7 +42,7 @@ namespace CardGames.BeggarMyNeighbour
         {
             _logger = logger;
             _players = new List<Player>();
-            _deck = deck;
+            _deck = new List<int>(deck);
             for (int i = 0; i < players; i++)
             {
                 _players.Add(new Player(i));
@@ -77,7 +77,7 @@ namespace CardGames.BeggarMyNeighbour
             _logger?.LogDebug($"Moving to player {_players[CurrentPlayer].ID} Pos : {CurrentPlayer}");
         }
 
-        public int Play()
+        public int Play(int maxMoves = int.MaxValue)
         {
             var paycount = 0;
             CurrentPlayer = 0;
@@ -85,6 +85,8 @@ namespace CardGames.BeggarMyNeighbour
 
             while (_players.Count > 1)
             {
+                if (_cardsPlayed >= maxMoves)
+                    return _cardsPlayed;
                 int currentcard = PlayCard();                
 
                 if (paycount > 0)
@@ -113,7 +115,8 @@ namespace CardGames.BeggarMyNeighbour
                     if (paycount == 0)
                     {
                         //player has lost the penalty give stack to previous
-                        _players.Find(p => p.ID == PreviousPlayer).AddStack(_stack);
+                        // PreviousPlayer may have been eliminated (played their last card as a picture) — guard against null.
+                        _players.Find(p => p.ID == PreviousPlayer)?.AddStack(_stack);
                         _logger?.LogInformation($"{_players[CurrentPlayer].ID} pos : {CurrentPlayer} has lost the penalty the stack goes to {PreviousPlayer} pos : {_players.FindIndex(p => p.ID == PreviousPlayer)}");
                         PreviousPlayer = -1;
                     }
